@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="mask-icon" href="https://angular.cn/assets/images/favicons/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/algos/css/main.css">
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"192.168.88.34","root":"/algos/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="MySQL 主从复制是其最重要的功能之一. 主从复制是指一台服务器充当主数据库服务器, 另一台或多台服务器充当从数据库服务器, 主服务器中的数据自动复制到从服务器之中. 对于多级复制, 数据库服务器即可充当主机, 也可充当从机. MySQL 主从复制的基础是主服务器对数据库修改记录二进制日志, 从服务器通过主服务器的二进制日志自动执行更新.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL主从复制">
+<meta property="og:url" content="http://192.168.88.34/algos/2019/06/01/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/index.html">
+<meta property="og:site_name" content="江湖夜雨十年灯">
+<meta property="og:description" content="MySQL 主从复制是其最重要的功能之一. 主从复制是指一台服务器充当主数据库服务器, 另一台或多台服务器充当从数据库服务器, 主服务器中的数据自动复制到从服务器之中. 对于多级复制, 数据库服务器即可充当主机, 也可充当从机. MySQL 主从复制的基础是主服务器对数据库修改记录二进制日志, 从服务器通过主服务器的二进制日志自动执行更新.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.niupic.com/images/2019/10/30/_1653.png">
+<meta property="og:image" content="https://i.niupic.com/images/2019/10/30/_1672.png">
+<meta property="article:published_time" content="2019-06-01T14:43:47.000Z">
+<meta property="article:modified_time" content="2019-06-01T14:43:47.000Z">
+<meta property="article:author" content="annwyn">
+<meta property="article:tag" content="annwyn&#39;s blog, 江湖夜雨十年灯">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.niupic.com/images/2019/10/30/_1653.png">
+
+<link rel="canonical" href="http://192.168.88.34/algos/2019/06/01/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MySQL主从复制 | 江湖夜雨十年灯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/algos/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖夜雨十年灯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/algos/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/algos/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/algos/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">23</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://192.168.88.34/algos/2019/06/01/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+      <meta itemprop="name" content="annwyn">
+      <meta itemprop="description" content="annwyn's blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖夜雨十年灯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL主从复制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-06-01 22:43:47" itemprop="dateCreated datePublished" datetime="2019-06-01T22:43:47+08:00">2019-06-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/algos/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>MySQL 主从复制是其最重要的功能之一. 主从复制是指一台服务器充当主数据库服务器, 另一台或多台服务器充当从数据库服务器, 主服务器中的数据自动复制到从服务器之中. 对于多级复制, 数据库服务器即可充当主机, 也可充当从机. MySQL 主从复制的基础是主服务器对数据库修改记录二进制日志, 从服务器通过主服务器的二进制日志自动执行更新. </p>
+<span id="more"></span>
+<h2 id="1-数据库主从复制配置"><a href="#1-数据库主从复制配置" class="headerlink" title="1. 数据库主从复制配置"></a>1. 数据库主从复制配置</h2><p>1.修改 master 数据库配置.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">server-id=1 <span class="comment">#设置server-id</span></span><br><span class="line">log-bin=mysql-bin <span class="comment">#开启二进制日志</span></span><br><span class="line">binlog-do-db=database1 <span class="comment">#如果备份多个数据库, 重复设置这个选项即可. 如果没有本行, 即表示同步所有数据库.</span></span><br><span class="line">binlog-ignore-db=mysql <span class="comment">#被忽略的数据库</span></span><br></pre></td></tr></table></figure>
+<p>2.修改 slave 数据库配置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">server-id=2 <span class="comment">#设置server-id, 此处不能与master的service-id相同</span></span><br></pre></td></tr></table></figure>
+<p>3.重启 master 和 slave 的 mysql 服务</p>
+<p>4.检查 master 的 binlog 文件及位置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show master status\G</span><br><span class="line">***************** 1. row ****************</span><br><span class="line">            File: mysql-bin.000001 <span class="comment">#当前记录的日志</span></span><br><span class="line">        Position: 0 <span class="comment">#日志中记录的位置  </span></span><br><span class="line">    Binlog_Do_DB: </span><br><span class="line">Binlog_Ignore_DB: </span><br></pre></td></tr></table></figure>
+<p>5.打开 slave 的 mysql 会话, 执行同步 sql</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; change master to </span><br><span class="line">	-&gt; master_host=<span class="string">&#x27;192.168.1.2&#x27;</span>,</span><br><span class="line">	-&gt; master_user=<span class="string">&#x27;user&#x27;</span>,</span><br><span class="line">	-&gt; master_password=<span class="string">&#x27;password&#x27;</span>,</span><br><span class="line">	-&gt; master_log_file=<span class="string">&#x27;mysql-bin.000001&#x27;</span>,</span><br><span class="line">	-&gt; master_log_pos=0;</span><br><span class="line">mysql&gt; start slave; <span class="comment"># 开启同步.</span></span><br><span class="line">mysql&gt; show slave status\G <span class="comment"># 查看同步状态</span></span><br><span class="line">*************************** 1. row ***************************</span><br><span class="line">               Slave_IO_State: Waiting <span class="keyword">for</span> master to send event</span><br><span class="line">                  Master_Host: 192.168.1.2</span><br><span class="line">                  Master_User: user </span><br><span class="line">                  Master_Port: 3306</span><br><span class="line">                Connect_Retry: 60</span><br><span class="line">              Master_Log_File: mysql-bin.000001</span><br><span class="line">          Read_Master_Log_Pos: 0</span><br><span class="line">               Relay_Log_File: db2-relay-bin.000002</span><br><span class="line">                Relay_Log_Pos: 337686</span><br><span class="line">        Relay_Master_Log_File: mysql-bin.000033</span><br><span class="line">             Slave_IO_Running: Yes</span><br><span class="line">            Slave_SQL_Running: Yes</span><br><span class="line">              Replicate_Do_DB:</span><br><span class="line">          Replicate_Ignore_DB:</span><br><span class="line">          ...</span><br></pre></td></tr></table></figure>
+<p>当同步状态中的 Slave_IO_Running 及 Slave_SQL_Running 进程为 Yes 状态, 说明同步成功, 否则说明同步失败.</p>
+<p>6.关闭同步并清除 binlog</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; stop slave; <span class="comment"># 启用新复制同步之前, 最好清除日志.</span></span><br><span class="line">mysql&gt; rest slave all;</span><br></pre></td></tr></table></figure>
+<p>至此, mysql 主从复制配置完成.</p>
+<h2 id="2-主从复制的实现原理"><a href="#2-主从复制的实现原理" class="headerlink" title="2. 主从复制的实现原理"></a>2. 主从复制的实现原理</h2><h3 id="2-1-主从复制原理"><a href="#2-1-主从复制原理" class="headerlink" title="2.1 主从复制原理"></a>2.1 主从复制原理</h3><p>MySQL 主从复制涉及到三个线程, 一个运行在 master (log dump thread)节点上, 其余两个(IO thread, sql thread)运行在 slave 节点上. 对于每一个主从连接, 都需要三个线程来完成, 当 master 节点有多个 slave 时, master 会为每一个 slave 创建一个 log dump 线程.</p>
+<ol>
+<li>master 节点 log dump 线程<br>当 slave 连接到 master 之后, master 会创建一个 log dump 线程, 用于发送 binlog 内容.</li>
+<li>slave 节点 IO 线程<br>当 slave 节点执行<code>start slave</code>命令后, slave 会创建一个 IO 线程用于连接主节点并读取 master 中更新的 binlog, 将接收到的 binlog 内容保存在中继日志中.</li>
+<li>slave 节点 SQL 线程<br>SQL 线程负责读取中继日志中的内容, 解析成具体的操作并执行, 最终保证主从数据的一致性.<br><img src="https://i.niupic.com/images/2019/10/30/_1653.png" alt="MySQL自从复制基本架构图"></li>
+</ol>
+<h3 id="2-2-主从复制过程"><a href="#2-2-主从复制过程" class="headerlink" title="2.2 主从复制过程"></a>2.2 主从复制过程</h3><ol>
+<li>slave 上的 IO 线程连接 master, 并请求从指定日志文件的指定位置(执行 SQL 中指定的 master_log_file 以及 master_log_pos )之后的内容.</li>
+<li>master 接收到 slave 的 IO 请求后, master 节点的 log dump 线程读取日志文件中指定位置之后的日志信息, 返回给 slave. 返回信息中除了日志包含的信息外, 还包含本次返回信息的 binlog 和 binlog position.</li>
+<li>slave 节点的 IO线程接收到内容后, 将接收到的日志内容更新到本机的中继日志中, 并将读取到的 binlog 文件名和位置保存在 master-info 文件中, 以便下次读取时返回给 master.</li>
+<li>slave 节点的 SQL线程检测到中继日志中新添加了内容后, 将中继日志中的内容解析并在本数据库中执行.</li>
+</ol>
+<h3 id="2-3-主从复制方式"><a href="#2-3-主从复制方式" class="headerlink" title="2.3 主从复制方式"></a>2.3 主从复制方式</h3><ol>
+<li>基于语句的复制(statement-based replication, SBR)<br>记录 SQL 语句在 binlog 中, Mysql 5.1.4 及之前的版本都是使用的这种复制格式.<br>优点是只需要记录会修改数据的 SQL 语句到 binlog 中, 减少了 binlog 日志量, 节约 I/O, 提高性能.<br>缺点是在某些情况下, 会导致主从节点中数据不一致(比如使用 now() 等函数时).</li>
+<li>基于行的复制(row-based replication, RBR)<br>master 将 SQL 语句分解为基于行更改的语句并记录在 binlog 中, 也就是只记录哪条数据被修改了, 修改成什么样.<br>优点是不会出现某些特定情况下的存储过程或者函数或者触发器的调用或者触发无法被正确复制的问题.<br>缺点是会产生大量的日志, 尤其是修改 table 的时候会让日志暴增, 同时增加 binlog 同步时间, 也不能通过 binlog 解析获取执行过的 sql 语句, 只能看到发生的 data 变更.</li>
+<li>混合模式 Mixed-format Replication (MBR)<br>MySQL NDB cluster 7.3和7.4使用的 MBR. 是以上两种模式的混合, 对于一般的复制使用 STATEMENT 模式保存到 binlog, 对于 STATEMENT 模式无法复制的操作则使用 ROW 模式来保存, MySQL 会根据执行的 SQL 语句选择日志保存方式.</li>
+</ol>
+<h3 id="2-4-主从复制模式"><a href="#2-4-主从复制模式" class="headerlink" title="2.4 主从复制模式"></a>2.4 主从复制模式</h3><ol>
+<li>异步复制<br>MySQL 的默认模式. 在 master 写入日志后立即向客户端返回成功.</li>
+<li>半同步复制<br>这种模式下 master 只需要接收到其中一台 slave 的返回信息, 就会向客户端返回成功, 否则需要等待直到超时时间然后切换成异步模式再提交. 这样做的目的可以可以提高数据安全性, 确保事务提交后, binlog 至少传输到了一个从节点上, 不能保证从节点将此事务更新到 db 中.<br>半同步模式不是 mysql 内置的, 从 mysql 5.5 开始集成, 需要 master 和 slave 安装插件开启半同步模式.</li>
+<li>同步复制<br>master 和 slave 全部执行成功之后才会向客户端返回成功.</li>
+</ol>
+<p>关于如何使用半同步复制, 请点击<a target="_blank" rel="noopener" href="https://www.cnblogs.com/ivictor/p/5735580.html">此处</a></p>
+<h3 id="2-5-MySQL并行复制"><a href="#2-5-MySQL并行复制" class="headerlink" title="2.5 MySQL并行复制"></a>2.5 MySQL并行复制</h3><p>当 master 的并发较高时, 产生的 DDL 数量超过 slave 单个 SQL 线程所能承受的范围, 那么就产生延时了, 当然还有可能与 slave 的大型 query 语句产生了锁等待有关.</p>
+<h4 id="MySQL-5-6-并行复制"><a href="#MySQL-5-6-并行复制" class="headerlink" title="MySQL 5.6 并行复制"></a>MySQL 5.6 并行复制</h4><p>在 MySQL 5.6 版本中已经支持了并行复制, 但是只是基于 schema, 也就是基于库的. 如果用户的 MySQL 数据库实例中存在多个库, 对于 slave 复制的速度会提升比较大. 但在一般的 MySQL 使用中, 一库多表比较常见, 此时的并行复制对于延迟并没有太大的改进.</p>
+<p>在 MySQL 5.6 版本之前, slave 上有两个线程: IO 线程和 SQL 线程. IO 线程负责接收 binlog 日志, SQL 线程进行回放 binlog 日志. 如果在 MySQL 5.6 版本开启并行复制功能, 那么 SQL 线程就变为了 coordinator (协调者)线程, coordinator 线程主要负责以前两部分的内容: </p>
+<ul>
+<li>若判断可以并行执行, 那么选择 worker 线程执行事务的二进制日志.</li>
+<li>若判断不可以并行执行, 如该操作是 DDL 亦或者是事务跨 schema 操作, 则等待所有的 worker 线程执行完成之后, 再执行当前的日志.<br><img src="https://i.niupic.com/images/2019/10/30/_1672.png" alt="MySQL 5.6 并行复制"><br>这意味着 coordinator 线程并不是仅将日志发送给 worker 线程, 自己也可以回放日志, 但是所有可以并行的操作交付由 worker 线程完成. coordinator 线程与 worker 是典型的生产者与消费者模型. </li>
+</ul>
+<p>上述机制实现了基于 schema 的并行复制存在两个问题, 首先是 crash safe 功能不好做, 因为可能之后执行的事务由于并行复制的关系先完成执行, 那么当发生 crash 的时候, 这部分的处理逻辑是比较复杂的. 从代码上看, 5.6这里引入了 Low-Water-Mark 标记来解决该问题, 从设计上看, 其是希望借助于日志的幂等性来解决该问题, 不过5.6的二进制日志回放还不能实现幂等性. 另一个最为关键的问题是这样设计的并行复制效果并不高, 如果用户实例仅有一个库, 那么就无法实现并行回放, 甚至性能会比原来的单线程更差. 而单库多表是比多库多表更为常见的一种情形. </p>
+<h5 id="MySQL-5-6-主从延迟优化"><a href="#MySQL-5-6-主从延迟优化" class="headerlink" title="MySQL 5.6 主从延迟优化"></a>MySQL 5.6 主从延迟优化</h5><ol>
+<li>分库, 降低 master 的写并发从而降低主从延迟</li>
+<li>开启并行复制有效降低同步延迟(如果写并发特别高, 不会有显著的降低)</li>
+<li>修改代码, 尽量减少耗时的 sql 以及锁的争抢.</li>
+<li>master 对数据安全性比较高, 但 slave 不需要那么高的安全性, 可以关闭 slave 的 binlog 或者修改 sync_binlog 和 innodb_flush_log_at_trx_commit 参数从而提高 sql 的执行效率</li>
+</ol>
+<blockquote>
+<p>sync_binlog:  sync_binlog = 0 ,表示 MySQL 不控制 binlog 的刷新, 由文件系统自己控制它的缓存的刷新.  如果sync_binlog &gt; 0, 表示每 sync_binlog 次事务提交, MySQL 调用文件系统的刷新操作将缓存刷下去.  最安全的就是sync_binlog = 1了, 表示每次事务提交, MySQL 都会把 binlog 刷下去, 是最安全但是性能损耗最大的设置. </p>
+</blockquote>
+<blockquote>
+<p>innodb_flush_log_at_trx_commit:  当 innodb_flush_log_at_trx_commit 取值为 0 的时候, log buffer 会每秒写入到日志文件并刷写 (flush) 到磁盘.  当取值为1时, 每次事务提交时, log buffer 会被写入到日志文件并刷写到磁盘. 这也是默认值. 这是最安全的配置, 但由于每次事务都需要进行磁盘 I/O, 所以也最慢.  当取值为2时, 每次事务提交会写入日志文件, 但并不会立即刷写到磁盘, 日志文件会每秒刷写一次到磁盘. </p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">查看: show global variables <span class="built_in">where</span> Variable_name like <span class="string">&quot;sync_binlog%&quot;</span></span><br><span class="line">设置: <span class="built_in">set</span> global sync_binlog = 1</span><br></pre></td></tr></table></figure>
+
+<h4 id="MySQL-5-7-并行复制"><a href="#MySQL-5-7-并行复制" class="headerlink" title="MySQL 5.7 并行复制"></a>MySQL 5.7 并行复制</h4><p>MySQL 5.7 才可称为真正的并行复制, 这其中最为主要的原因就是 slave 服务器的回放与主机是一致的, 即 master 服务器上是怎么并行执行的, slave 上就怎样进行并行回放. 不再有库的并行复制限制, 对于二进制日志格式也无特殊的要求(基于库的并行复制也没有要求).</p>
+<h5 id="在MySQL-5-7上开启并行复制"><a href="#在MySQL-5-7上开启并行复制" class="headerlink" title="在MySQL 5.7上开启并行复制"></a>在MySQL 5.7上开启并行复制</h5><p>MySQL 5.7 的并行复制建立在组提交的基础上, 所有在主库上能够完成 Prepared 的语句表示没有数据冲突, 就可以在 Slave 节点并行复制. 关于 MySQL 5.7 的组提交, 我们要看下以下的参数：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show global variables like <span class="string">&#x27;%group_commit%&#x27;</span>;</span><br><span class="line">+-----------------------------------------+-------+</span><br><span class="line">| Variable_name                           | Value |</span><br><span class="line">+-----------------------------------------+-------+</span><br><span class="line">| binlog_group_commit_sync_delay          | 0     |</span><br><span class="line">| binlog_group_commit_sync_no_delay_count | 0     |</span><br><span class="line">+-----------------------------------------+-------+</span><br><span class="line">2 rows <span class="keyword">in</span> <span class="built_in">set</span> (0.00 sec)</span><br></pre></td></tr></table></figure>
+<p>要开启 MySQL 5.7 并行复制需要以下二步, 首先在主库设置 binlog_group_commit_sync_delay 的值大于 0.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; <span class="built_in">set</span> global binlog_group_commit_sync_delay=10;</span><br></pre></td></tr></table></figure>
+<p>这里简要说明下 binlog_group_commit_sync_delay 和 binlog_group_commit_sync_no_delay_count 参数的作用. </p>
+<ol>
+<li>binlog_group_commit_sync_delay: <blockquote>
+<p>全局动态变量, 单位微妙, 默认 0, 范围: 0～1000000(1秒). 表示 binlog 提交后等待延迟多少时间再同步到磁盘, 默认 0, 不延迟. 当设置为 0 以上的时候, 就允许多个事务的日志同时一起提交, 也就是我们说的组提交. 组提交是并行复制的基础, 我们设置这个值的大于 0 就代表打开了组提交的功能. </p>
+</blockquote>
+</li>
+<li>binlog_group_commit_sync_no_delay_count<blockquote>
+<p>全局动态变量, 单位个数, 默认 0, 范围: 0～1000000.  表示等待延迟提交的最大事务数, 如果上面参数的时间没到, 但事务数到了, 则直接同步到磁盘. 若 binlog_group_commit_sync_delay 没有开启, 则该参数也不会开启. </p>
+</blockquote>
+</li>
+</ol>
+<p>其次要在 Slave 主机上设置如下几个参数：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 过多的线程会增加线程间同步的开销, 建议4-8个Slave线程. </span></span><br><span class="line">mysql&gt; stop slave;</span><br><span class="line">Query OK, 0 rows affected (0.07 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="built_in">set</span> global slave_parallel_type=<span class="string">&#x27;LOGICAL_CLOCK&#x27;</span>;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; <span class="built_in">set</span> global slave_parallel_workers=4;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; start slave;</span><br><span class="line">Query OK, 0 rows affected (0.06 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; show variables like <span class="string">&#x27;slave_parallel_%&#x27;</span>;</span><br><span class="line">+------------------------+---------------+</span><br><span class="line">| Variable_name          | Value         |</span><br><span class="line">+------------------------+---------------+</span><br><span class="line">| slave_parallel_type    | LOGICAL_CLOCK |</span><br><span class="line">| slave_parallel_workers | 4             |</span><br><span class="line">+------------------------+---------------+</span><br><span class="line">2 rows <span class="keyword">in</span> <span class="built_in">set</span> (0.00 sec)</span><br></pre></td></tr></table></figure>
+
+<h5 id="检查-Worker-线程的状态"><a href="#检查-Worker-线程的状态" class="headerlink" title="检查 Worker 线程的状态:"></a>检查 Worker 线程的状态:</h5><p>当前 slave 的 SQL 线程为 Coordinator(协调器), 执行中继日志的线程为 Worker(当前的 SQL 线程不仅起到协调器的作用, 同时也可以重放 Relay log 中主库提交的事务).<br>我们上面设置的线程数是 4, 从库就能看到 4 个 Coordinator(协调器)进程. </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show processlist;</span><br><span class="line">+----+-------------+-----------+------+---------+------+--------------------------------------------------------+------------------+</span><br><span class="line">| Id | User        | Host      | db   | Command | Time | State                                                  | Info             |</span><br><span class="line">+----+-------------+-----------+------+---------+------+--------------------------------------------------------+------------------+</span><br><span class="line">|  4 | root        | localhost | NULL | Query   |    0 | starting                                               | show processlist |</span><br><span class="line">|  7 | system user |           | NULL | Connect |   48 | Waiting <span class="keyword">for</span> master to send event                       | NULL             |</span><br><span class="line">|  8 | system user |           | NULL | Connect |   48 | Slave has <span class="built_in">read</span> all relay <span class="built_in">log</span>; waiting <span class="keyword">for</span> more updates | NULL             |</span><br><span class="line">|  9 | system user |           | NULL | Connect |   48 | Waiting <span class="keyword">for</span> master to send event                       | NULL             |</span><br><span class="line">| 10 | system user |           | NULL | Connect |   48 | Waiting <span class="keyword">for</span> master to send event                       | NULL             | </span><br><span class="line">| 11 | system user |           | NULL | Connect |   48 | Waiting <span class="keyword">for</span> master to send event                       | NULL             |</span><br><span class="line">| 12 | system user |           | NULL | Connect |   48 | Waiting <span class="keyword">for</span> master to send event                       | NULL             |</span><br><span class="line">+----+-------------+-----------+------+---------+------+--------------------------------------------------------+------------------+</span><br><span class="line">7 rows <span class="keyword">in</span> <span class="built_in">set</span> (0.00 sec)</span><br></pre></td></tr></table></figure>
+<h5 id="并行复制配置与调优"><a href="#并行复制配置与调优" class="headerlink" title="并行复制配置与调优"></a>并行复制配置与调优</h5><p>开启 MTS 功能后, 务必将参数 master-info-repository 设置为 TABLE , 这样性能可以有 50%~80% 的提升. 这是因为并行复制开启后对于 master.info 这个文件的更新将会大幅提升, 资源的竞争也会变大.<br>在 MySQL 5.7 中, 推荐将 master-info-repository 和 relay-log-info-repository 设置为 TABLE , 来减小这部分的开销. </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">master-info-repository = table</span><br><span class="line">relay-log-info-repository = table</span><br><span class="line">relay-log-recovery = ON</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/algos/2019/05/12/MyBatis%E7%BC%93%E5%AD%98/" rel="prev" title="MyBatis缓存">
+      <i class="fa fa-chevron-left"></i> MyBatis缓存
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/algos/2019/06/18/Sharding-JDBC%E5%85%A5%E9%97%A8/" rel="next" title="Sharding-JDBC分库分表入门">
+      Sharding-JDBC分库分表入门 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E9%85%8D%E7%BD%AE"><span class="nav-text">1. 数据库主从复制配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-text">2. 主从复制的实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86"><span class="nav-text">2.1 主从复制原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E8%BF%87%E7%A8%8B"><span class="nav-text">2.2 主从复制过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E6%96%B9%E5%BC%8F"><span class="nav-text">2.3 主从复制方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E6%A8%A1%E5%BC%8F"><span class="nav-text">2.4 主从复制模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-MySQL%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-text">2.5 MySQL并行复制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MySQL-5-6-%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-text">MySQL 5.6 并行复制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MySQL-5-7-%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-text">MySQL 5.7 并行复制</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="annwyn"
+      src="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+  <p class="site-author-name" itemprop="name">annwyn</p>
+  <div class="site-description" itemprop="description">annwyn's blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/algos/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/algos/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/annwynAval" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;annwynAval" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:296674162@qq.com" title="E-Mail → mailto:296674162@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">annwyn</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.ui.min.js"></script>
+
+<script src="/algos/js/utils.js"></script>
+
+<script src="/algos/js/motion.js"></script>
+
+
+<script src="/algos/js/schemes/pisces.js"></script>
+
+
+<script src="/algos/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

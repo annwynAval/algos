@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="mask-icon" href="https://angular.cn/assets/images/favicons/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/algos/css/main.css">
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"192.168.88.34","root":"/algos/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本文介绍一些常用的Spring工具类, 其中大部分Spring工具类不但可以在基于Spring的应用中使用, 还可以在其它的应用中使用. 使用JDK的文件操作类在访问类路径相关、Web上下文相关的文件资源时, 往往显得拖泥带水、拐弯抹角, Spring的Resource实现类使这些工作变得轻松了许多.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring常用工具类">
+<meta property="og:url" content="http://192.168.88.34/algos/2019/10/01/Spring%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7%E7%B1%BB/index.html">
+<meta property="og:site_name" content="江湖夜雨十年灯">
+<meta property="og:description" content="本文介绍一些常用的Spring工具类, 其中大部分Spring工具类不但可以在基于Spring的应用中使用, 还可以在其它的应用中使用. 使用JDK的文件操作类在访问类路径相关、Web上下文相关的文件资源时, 往往显得拖泥带水、拐弯抹角, Spring的Resource实现类使这些工作变得轻松了许多.">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-10-01T08:12:24.000Z">
+<meta property="article:modified_time" content="2019-10-01T08:12:24.000Z">
+<meta property="article:author" content="annwyn">
+<meta property="article:tag" content="annwyn&#39;s blog, 江湖夜雨十年灯">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://192.168.88.34/algos/2019/10/01/Spring%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7%E7%B1%BB/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spring常用工具类 | 江湖夜雨十年灯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/algos/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖夜雨十年灯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/algos/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/algos/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/algos/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">23</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://192.168.88.34/algos/2019/10/01/Spring%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7%E7%B1%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+      <meta itemprop="name" content="annwyn">
+      <meta itemprop="description" content="annwyn's blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖夜雨十年灯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring常用工具类
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-01 16:12:24" itemprop="dateCreated datePublished" datetime="2019-10-01T16:12:24+08:00">2019-10-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/algos/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文介绍一些常用的Spring工具类, 其中大部分Spring工具类不但可以在基于Spring的应用中使用, 还可以在其它的应用中使用. 使用JDK的文件操作类在访问类路径相关、Web上下文相关的文件资源时, 往往显得拖泥带水、拐弯抹角, Spring的Resource实现类使这些工作变得轻松了许多. </p>
+<span id="more"></span>
+
+<h3 id="1-文件相关工具"><a href="#1-文件相关工具" class="headerlink" title="1. 文件相关工具"></a>1. 文件相关工具</h3><p>文件资源的操作是应用程序中常见的功能, 如当上传一个文件后将其保存在特定目录下, 从指定地址加载一个配置文件等等. 相比于 JDK 的 File, Spring 的 Resource 接口资源概念的描述接口抽象层面更高且涵盖, Spring 提供了许多方便易用的资源操作工具类, 它们大大降低资源操作的复杂度, 同时具有更强的普适性. 这些工具类不依赖于 Spring 容器, 可以在程序中象一般普通类一样使用它们. </p>
+<p>Spring 定义了一个 org.springframework.core.io.Resource 接口, Resource 接口是为了统一各种类型不同的资源而定义的, Spring 提供了若干 Resource 接口的实现类, 这些实现类可以轻松地加载不同类型的底层资源, 并提供了获取文件名、URL 地址以及资源内容的操作方法. </p>
+<h4 id="1-1-文件读取"><a href="#1-1-文件读取" class="headerlink" title="1.1 文件读取"></a>1.1 文件读取</h4><ul>
+<li>FileSystemResource: 以文件系统绝对路径的方式进行访问；</li>
+<li>ClassPathResource: 以类路径的方式进行访问；</li>
+<li>ServletContextResource: 以相对于 Web 应用根目录的方式进行访问. </li>
+<li>UrlResource : 访问位于远程服务器Web 服务器或 FTP 服务器的文件资源</li>
+</ul>
+<p>为了方便访问不同类型的资源, 必须使用相应的 Resource 实现类, 是否可以在不显式使用 Resource 实现类的情况下, 仅根据带特殊前缀的资源地址直接加载文件资源呢？ Spring 提供了一个 ResourceUtils 工具类, 它支持“classpath:”和“file:”的地址前缀, 它能够从指定的地址加载文件资源.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">File clsFile = ResourceUtils.getFile(<span class="string">&quot;classpath:conf/file1.txt&quot;</span>); </span><br><span class="line">System.out.println(clsFile.isFile()); </span><br><span class="line"></span><br><span class="line">File httpFile = ResourceUtils.getFile(<span class="string">&quot;file:D:/masterSpring/chapter23/src/conf/file1.txt&quot;</span>); </span><br><span class="line">System.out.println(httpFile.isFile());        </span><br></pre></td></tr></table></figure>
+
+<p>Spring 提供的 LocalizedResourceHelper 允许通过文件资源基名和本地化实体获取匹配的本地化文件资源并以 Resource 对象返回. 假设在类路径的 i18n 目录下, 拥有一组基名为 message 的本地化文件资源, 我们通过以下代码获取对应中文和英文的本地化文件资源</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">LocalizedResourceHelper localizedResourceHelper = <span class="keyword">new</span> LocalizedResourceHelper();</span><br><span class="line">Resource msgUs = localizedResourceHelper.findLocalizedResource(<span class="string">&quot;i18n/message&quot;</span>, <span class="string">&quot;.properties&quot;</span>, Locale.US);</span><br><span class="line">Resource msgCn = localizedResourceHelper.findLocalizedResource(<span class="string">&quot;i18n/message&quot;</span>, <span class="string">&quot;.properties&quot;</span>, Locale.CHINA);</span><br></pre></td></tr></table></figure>
+<p>虽然 JDK 的 java.util.ResourceBundle 类也可以通过相似的方式获取本地化文件资源, 但是其返回的是 ResourceBundle 类型的对象. 如果您决定统一使用 Spring 的 Resource 接表征文件资源, 那么 LocalizedResourceHelper 就是获取文件资源的非常适合的帮助类了. </p>
+<h4 id="1-2-文件操作"><a href="#1-2-文件操作" class="headerlink" title="1.2 文件操作"></a>1.2 文件操作</h4><p>在使用各种 Resource 接口的实现类加载文件资源后, 经常需要对文件资源进行读取、拷贝、转存等不同类型的操作. 可以通过 Resource 接口所提供了方法完成这些功能, 不过在大多数情况下, 通过 Spring 为 Resource 所配备的工具类完成文件资源的操作将更加方便. </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Resource resource = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">byte</span>[] bytes = FileCopyUtils.copyToByteArray(resource.getFile());</span><br><span class="line">String string = FileCopyUtils.copyToString(<span class="keyword">new</span> FileReader(resource.getFile()));</span><br><span class="line">FileCopyUtils.copy(resource.getFile(), <span class="keyword">new</span> File(<span class="string">&quot;&quot;</span>));</span><br></pre></td></tr></table></figure>
+<p>往往我们都通过直接操作 InputStream 读取文件的内容, 但是流操作的代码是比较底层的, 代码的面向对象性并不强. 通过 FileCopyUtils 读取和拷贝文件内容易于操作且相当直观. FileCopyUtils 还提供了多个将文件内容拷贝到各种目标对象中的方法.</p>
+<table>
+<thead>
+<tr>
+<th>方法名</th>
+<th>方法说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>copy(byte[] in, File out)</td>
+<td>将 byte[] 拷贝到一个文件中</td>
+</tr>
+<tr>
+<td>copy(byte[] in, OutputStream out)</td>
+<td>将 byte[] 拷贝到一个输出流中</td>
+</tr>
+<tr>
+<td>copy(File in, File out)</td>
+<td>将文件拷贝到另一个文件中</td>
+</tr>
+<tr>
+<td>copy(InputStream in, OutputStream out)</td>
+<td>将输入流拷贝到输出流中</td>
+</tr>
+<tr>
+<td>copy(Reader in, Writer out)</td>
+<td>将 Reader 读取的内容拷贝到 Writer 指向目标输出中</td>
+</tr>
+<tr>
+<td>copy(String in, Writer out)</td>
+<td>将字符串拷贝到一个 Writer 指向的目标中</td>
+</tr>
+</tbody></table>
+<h4 id="1-3-属性操作"><a href="#1-3-属性操作" class="headerlink" title="1.3 属性操作"></a>1.3 属性操作</h4><p>可以通过 java.util.Properties 的 load(InputStream inStream) 方法从一个输入流中加载属性资源. Spring 提供的 PropertiesLoaderUtils 允许您直接通过基于类路径的文件地址加载属性资源, 一般情况下, 应用程序的属性文件都放置在类路径下, 所以 PropertiesLoaderUtils 比之于 Properties#load(InputStream inStream) 方法显然具有更强的实用性.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Properties props = PropertiesLoaderUtils.loadAllProperties(<span class="string">&quot;jdbc.properties&quot;</span>); </span><br><span class="line">System.out.println(props.getProperty(<span class="string">&quot;jdbc.driverClassName&quot;</span>)); </span><br></pre></td></tr></table></figure>
+
+<h4 id="1-4-处理特殊编码"><a href="#1-4-处理特殊编码" class="headerlink" title="1.4 处理特殊编码"></a>1.4 处理特殊编码</h4><p>使用 Resource 实现类加载文件资源时, 默认采用操作系统的编码格式. 如果文件资源采用了特殊的编码格式如 UTF-8, 则在读取资源内容时必须事先通过 EncodedResource 指定编码格式, 否则将会产生中文乱码的问题. </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Resource resource = <span class="keyword">new</span> ClassPathResource(<span class="string">&quot;&quot;</span>); </span><br><span class="line">EncodedResource encResource = <span class="keyword">new</span> EncodedResource(resource, <span class="string">&quot;UTF-8&quot;</span>); </span><br><span class="line">String content  = FileCopyUtils.copyToString(encResource.getReader());</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-Web相关工具"><a href="#2-Web相关工具" class="headerlink" title="2. Web相关工具"></a>2. Web相关工具</h3><p>使用 Spring 框架开发 Web 的应用时, Spring 为 Web 应用提供了很多有用的工具类, 这些工具类可以给您的程序开发带来很多便利. </p>
+<h4 id="2-1-WebApplicationContextUtils"><a href="#2-1-WebApplicationContextUtils" class="headerlink" title="2.1 WebApplicationContextUtils"></a>2.1 WebApplicationContextUtils</h4><p>当 Web 应用集成 Spring 容器后, 代表 Spring 容器的 WebApplicationContext 对象将以 WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE 为键存放在 ServletContext 属性列表中. 可以通过位于 org.springframework.web.context.support 包中的 WebApplicationContextUtils 工具类获取 WebApplicationContext</p>
+<p>当 ServletContext 属性列表中不存在 WebApplicationContext 时, getWebApplicationContext() 方法不会抛出异常, 它简单地返回 null. 如果后续代码直接访问返回的结果将引发一个 NullPointerException 异常, 而 WebApplicationContextUtils 中 getRequiredWebApplicationContext(ServletContext sc) 方法要求 ServletContext 属性列表中一定要包含一个有效的 WebApplicationContext 对象, 否则马上抛出一个 IllegalStateException 异常. </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">WebApplicationContext wac = WebApplicationContextUtils.getWebApplicationContext(servletContext);</span><br><span class="line">WebApplicationContext wac = WebApplicationContextUtils.getRequiredWebApplicationContext(servletContext)</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-2-WebUtils"><a href="#2-2-WebUtils" class="headerlink" title="2.2 WebUtils"></a>2.2 WebUtils</h4><p>位于 org.springframework.web.util 包中的 WebUtils 是一个非常好用的工具类, 它对很多 Servlet API 提供了易用的代理方法, 降低了访问 Servlet API 的复杂度, 可以将其看成是常用 Servlet API 方法的门面类. </p>
+<table>
+<thead>
+<tr>
+<th>方法名</th>
+<th>方法说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>String getRealPath(ServletContext servletContext, String path)</td>
+<td>获取相对路径对应文件系统的真实文件路径</td>
+</tr>
+<tr>
+<td>File getTempDir(ServletContext servletContext)</td>
+<td>获取 ServletContex 对应的临时文件地址, 它以 File 对象的形式返回</td>
+</tr>
+<tr>
+<td>Cookie getCookie(HttpServletRequest request, String name)</td>
+<td>获取 HttpServletRequest 中特定名字的 Cookie 对象. 如果您需要创建 Cookie,  Spring 也提供了一个方便的 CookieGenerator 工具类</td>
+</tr>
+<tr>
+<td>Object getSessionAttribute(HttpServletRequest request, String name)</td>
+<td>获取 HttpSession 特定属性名的对象, 否则您必须通过 request.getHttpSession.getAttribute(name) 完成相同的操作</td>
+</tr>
+<tr>
+<td>Object getRequiredSessionAttribute(HttpServletRequest request, String name)</td>
+<td>和上一个方法类似, 只不过强制要求 HttpSession 中拥有指定的属性, 否则抛出异常</td>
+</tr>
+<tr>
+<td>String getSessionId(HttpServletRequest request)</td>
+<td>获取 Session ID 的值</td>
+</tr>
+<tr>
+<td>void exposeRequestAttributes(ServletRequest request, Map attributes)</td>
+<td>将 Map 元素添加到 ServletRequest 的属性列表中, 当请求被导向forward到下一个处理程序时, 这些请求属性就可以被访问到了</td>
+</tr>
+</tbody></table>
+<h3 id="3-过滤器和监听器"><a href="#3-过滤器和监听器" class="headerlink" title="3. 过滤器和监听器"></a>3. 过滤器和监听器</h3><p>Spring 为 Web 应用提供了几个过滤器和监听器, 在适合的时间使用它们, 可以解决一些常见的 Web 应用问题. </p>
+<h4 id="3-1-延迟加载过滤器"><a href="#3-1-延迟加载过滤器" class="headerlink" title="3.1 延迟加载过滤器"></a>3.1 延迟加载过滤器</h4><p>Hibernate 允许对关联对象、属性进行延迟加载, 但是必须保证延迟加载的操作限于同一个 Hibernate Session 范围之内进行. 如果 Service 层返回一个启用了延迟加载功能的领域对象给 Web 层, 当 Web 层访问到那些需要延迟加载的数据时, 由于加载领域对象的 Hibernate Session 已经关闭, 这些导致延迟加载数据的访问异常. </p>
+<p>Spring 为此专门提供了一个 OpenSessionInViewFilter 过滤器, 它的主要功能是使每个请求过程绑定一个 Hibernate Session, 即使最初的事务已经完成了, 也可以在 Web 层进行延迟加载的操作. </p>
+<p>OpenSessionInViewFilter 过滤器将 Hibernate Session 绑定到请求线程中, 它将自动被 Spring 的事务管理器探测到. 所以 OpenSessionInViewFilter 适用于 Service 层使用 HibernateTransactionManager 或 JtaTransactionManager 进行事务管理的环境, 也可以用于非事务只读的数据操作中. </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">filter</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>hibernateFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">filter-class</span>&gt;</span> </span><br><span class="line">    org.springframework.orm.hibernate4.support.OpenSessionInViewFilter </span><br><span class="line">    <span class="tag">&lt;/<span class="name">filter-class</span>&gt;</span> </span><br><span class="line"> <span class="tag">&lt;/<span class="name">filter</span>&gt;</span> </span><br><span class="line"> <span class="tag">&lt;<span class="name">filter-mapping</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>hibernateFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>*.html<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span> </span><br><span class="line"> <span class="tag">&lt;/<span class="name">filter-mapping</span>&gt;</span> </span><br></pre></td></tr></table></figure>
+<h4 id="3-2-中文乱码过滤器"><a href="#3-2-中文乱码过滤器" class="headerlink" title="3.2 中文乱码过滤器"></a>3.2 中文乱码过滤器</h4><p>通过表单向服务器提交数据时, 一个经典的问题就是中文乱码问题. 虽然我们所有的 JSP 文件和页面编码格式都采用 UTF-8, 但这个问题还是会出现. 解决的办法很简单, 我们只需要在 web.xml 中配置一个 Spring 的编码转换过滤器就可以了</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">filter</span>&gt;</span> </span><br><span class="line">   <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>encodingFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span> </span><br><span class="line">   <span class="tag">&lt;<span class="name">filter-class</span>&gt;</span>org.springframework.web.filter.CharacterEncodingFilter<span class="tag">&lt;/<span class="name">filter-class</span>&gt;</span> </span><br><span class="line">   <span class="tag">&lt;<span class="name">init-param</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>encoding<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span> </span><br><span class="line">       <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span> </span><br><span class="line">   <span class="tag">&lt;/<span class="name">init-param</span>&gt;</span> </span><br><span class="line">   <span class="tag">&lt;<span class="name">init-param</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>forceEncoding<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span> </span><br><span class="line">       <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span> </span><br><span class="line">   <span class="tag">&lt;/<span class="name">init-param</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;/<span class="name">filter</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;<span class="name">filter-mapping</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">filter-name</span>&gt;</span>encodingFilter<span class="tag">&lt;/<span class="name">filter-name</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>*.html<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;/<span class="name">filter-mapping</span>&gt;</span> </span><br></pre></td></tr></table></figure>
+<h4 id="3-3-请求跟踪日志过滤器"><a href="#3-3-请求跟踪日志过滤器" class="headerlink" title="3.3 请求跟踪日志过滤器"></a>3.3 请求跟踪日志过滤器</h4><p>除了以上两个常用的过滤器外, 还有两个在程序调试时可能会用到的请求日志跟踪过滤器, 它们会将请求的一些重要信息记录到日志中, 方便程序的调试. 这两个日志过滤器只有在日志级别为 DEBUG 时才会起作用</p>
+<table>
+<thead>
+<tr>
+<th>类名</th>
+<th>方法说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>org.springframework.web.filter.ServletContextRequestLoggingFilter</td>
+<td>该过滤器将请求的 URI 记录到 Common 日志中(如通过 Log4J 指定的日志文件)</td>
+</tr>
+<tr>
+<td>org.springframework.web.filter.ServletContextRequestLoggingFilter</td>
+<td>该过滤器将请求的 URI 记录到 ServletContext 日志中</td>
+</tr>
+</tbody></table>
+<p>通过这个请求跟踪日志, 程度调试者可以详细地查看到有哪些请求被调用, 请求的参数是什么, 请求是否正确返回等信息. 虽然这两个请求跟踪日志过滤器一般在程序调试时使用, 但是即使程序部署不将其从 web.xml 中移除也不会有大碍, 因为只要将日志级别设置为 DEBUG 以上级别, 它们就不会输出请求跟踪日志信息了. </p>
+<h4 id="3-4-WebAppRootListener-监听器与Log4jConfigListener-监听器"><a href="#3-4-WebAppRootListener-监听器与Log4jConfigListener-监听器" class="headerlink" title="3.4 WebAppRootListener 监听器与Log4jConfigListener 监听器"></a>3.4 WebAppRootListener 监听器与Log4jConfigListener 监听器</h4><p>Spring 在 org.springframework.web.util 包中提供了几个特殊用途的 Servlet 监听器, 正确地使用它们可以完成一些特定需求的功能. 比如某些第三方工具支持通过 ${key} 的方式引用系统参数即可以通过 System.getProperty() 获取的属性, WebAppRootListener 可以将 Web 应用根目录添加到系统参数中, 对应的属性名可以通过名为“webAppRootKey”的 Servlet 上下文参数指定, 默认为“webapp.root”. </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context-param</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>webAppRootKey<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>rootKey<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">context-param</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;<span class="name">listener</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">listener-class</span>&gt;</span>org.springframework.web.util.WebAppRootListener<span class="tag">&lt;/<span class="name">listener-class</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;/<span class="name">listener</span>&gt;</span> </span><br></pre></td></tr></table></figure>
+<p>这样, 就可以在程序中通过 System.getProperty(rootKey) 获取 Web 应用的根目录了. 不过更常见的使用场景是在第三方工具的配置文件中通过 ${rootKey} 引用 Web 应用的根目录. 比如以下的 log4j.properties 配置文件就通过 ${rootKey} 设置了日志文件的地址：</p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">log4j.rootLogger</span>=<span class="string">INFO,R </span></span><br><span class="line"><span class="meta">log4j.appender.R</span>=<span class="string">org.apache.log4j.RollingFileAppender </span></span><br><span class="line"><span class="meta">log4j.appender.R.File</span>=<span class="string">$&#123;rootKey&#125;/WEB-INF/logs/log4j.log</span></span><br></pre></td></tr></table></figure>
+
+<p>另一个专门用于 Log4J 的监听器是 Log4jConfigListener. 一般情况下, 您必须将 Log4J 日志配置文件以 log4j.properties 为文件名并保存在类路径下. Log4jConfigListener 允许您通过 log4jConfigLocation Servlet 上下文参数显式指定 Log4J 配置文件的地址, 如下所示：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context-param</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>log4jConfigLocation<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>/WEB-INF/log4j.properties<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;/<span class="name">context-param</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;<span class="name">listener</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">listener-class</span>&gt;</span>org.springframework.web.util.Log4jConfigListener<span class="tag">&lt;/<span class="name">listener-class</span>&gt;</span> </span><br><span class="line"><span class="tag">&lt;/<span class="name">listener</span>&gt;</span> </span><br></pre></td></tr></table></figure>
+<p>Log4jConfigListener 监听器包括了 WebAppRootListener 的功能, 也就是说, Log4jConfigListener 会自动完成将 Web 应用根目录以 webAppRootKey 上下文参数指定的属性名添加到系统参数中, 所以当您使用 Log4jConfigListener 后, 就没有必须再使用 WebAppRootListener 了. </p>
+<h4 id="3-5-Introspector-缓存清除监听器"><a href="#3-5-Introspector-缓存清除监听器" class="headerlink" title="3.5 Introspector 缓存清除监听器"></a>3.5 Introspector 缓存清除监听器</h4><p>Spring 还提供了一个名为 org.springframework.web.util.IntrospectorCleanupListener 的监听器. 它主要负责处理由 JavaBean Introspector 功能而引起的缓存泄露. IntrospectorCleanupListener 监听器在 Web 应用关闭的时会负责清除 JavaBean Introspector 的缓存, 在 web.xml 中注册这个监听器可以保证在 Web 应用关闭的时候释放与其相关的 ClassLoader 的缓存和类引用. </p>
+<p>如果使用了 JavaBean Introspector 分析应用中的类, Introspector 缓存会保留这些类的引用, 结果在应用关闭的时候, 这些类以及 Web 应用相关的 ClassLoader 不能被垃圾回收. 不幸的是, 清除 Introspector 的唯一方式是刷新整个缓存, 这是因为没法准确判断哪些是属于本 Web 应用的引用对象, 哪些是属于其它 Web 应用的引用对象. 所以删除被缓存的 Introspection 会导致将整个 JVM 所有应用的 Introspection 都删掉. </p>
+<p>需要注意的是, Spring 托管的 Bean 不需要使用这个监听器, 因为 Spring 的 Introspection 所使用的缓存在分析完一个类之后会马上从 javaBean Introspector 缓存中清除掉, 并将缓存保存在应用程序特定的 ClassLoader 中, 所以它们一般不会导致内存资源泄露. 但是一些类库和框架往往会产生这个问题. 例如 Struts 和 Quartz 的 Introspector 的内存泄漏会导致整个的 Web 应用的 ClassLoader 不能进行垃圾回收. 在 Web 应用关闭之后, 还会看到此应用的所有静态类引用, 这个错误当然不是由这个类自身引起的. 解决这个问题的方法很简单, 仅需在 web.xml 中配置 IntrospectorCleanupListener 监听器就可以了</p>
+<h3 id="4-特殊字符转义"><a href="#4-特殊字符转义" class="headerlink" title="4. 特殊字符转义"></a>4. 特殊字符转义</h3><p>由于 Web 应用程序需要联合使用到多种语言, 每种语言都包含一些特殊的字符, 对于动态语言或标签式的语言而言, 如果需要动态构造语言的内容时, 一个我们经常会碰到的问题就是特殊字符转义的问题. 如果不对这些特殊字符进行转义处理, 则不但可能破坏文档结构, 还可以引发潜在的安全问题. </p>
+<p>Spring 为 HTML 和 JavaScript 特殊字符提供了转义操作工具类, 它们分别是 HtmlUtils 和 JavaScriptUtils. </p>
+<p>即使没有处理 HTML 或 JavaScript 的特殊字符, 也不会带来灾难性的后果, 但是如果不在动态构造 SQL 语句时对变量中特殊字符进行处理, 将可能导致程序漏洞、数据盗取、数据破坏等严重的安全问题. 为了防止他人使用特殊 SQL 字符破坏 SQL 的语句结构或植入恶意操作, 必须在变量拼接到 SQL 语句之前对其中的特殊字符进行转义处理. </p>
+<p>Spring 并没有提供相应的工具类, 可以通过 jakarta commons lang 通用类包中spring/lib/jakarta-commons/commons-lang.jar的 StringEscapeUtils 完成这一工作. 事实上, StringEscapeUtils 不但提供了 SQL 特殊字符转义处理的功能, 还提供了 HTML、XML、JavaScript、Java 特殊字符的转义和还原的方法. 如果不介意引入 jakarta commons lang 类包, 更推荐使用 StringEscapeUtils 工具类完成特殊字符转义处理的工作. </p>
+<h3 id="5-方法入参检测工具类"><a href="#5-方法入参检测工具类" class="headerlink" title="5. 方法入参检测工具类"></a>5. 方法入参检测工具类</h3><p>Web 应用在接受表单提交的数据后都需要对其进行合法性检查, 如果表单数据不合法, 请求将被驳回. 类似的, 当我们在编写类的方法时, 也常常需要对方法入参进行合法性检查, 如果入参不符合要求, 方法将通过抛出异常的方式拒绝后续处理. 但是在每个方法中都使用手工编写检测逻辑的方式并不是一个好主意. 阅读 Spring 源码, 会发现 Spring 采用一个 org.springframework.util.Assert 通用类完成这一任务. </p>
+<p>Spring 对方法入参的检测借用了这个概念, 其提供的 Assert 类拥有众多按规则对方法入参进行断言的方法, 可以满足大部分方法入参检测的要求. 这些断言方法在入参不满足要求时就会抛出 IllegalArgumentException. </p>
+<table>
+<thead>
+<tr>
+<th>断言方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>notNull(Object object)</td>
+<td>当 object 不为 null 时抛出异常, notNull(Object object, String message) 方法允许您通过 message 定制异常信息. 和 notNull() 方法断言规则相反的方法是 isNull(Object object)/isNull(Object object, String message), 它要求入参一定是 null</td>
+</tr>
+<tr>
+<td>isTrue(boolean expression) / isTrue(boolean expression, String message)</td>
+<td>当 expression 不为 true 抛出异常</td>
+</tr>
+<tr>
+<td>notEmpty(Collection collection) / notEmpty(Collection collection, String message)</td>
+<td>当集合未包含元素时抛出异常. notEmpty(Map map) / notEmpty(Map map, String message) 和 notEmpty(Object[] array, String message) / notEmpty(Object[] array, String message) 分别对 Map 和 Object[] 类型的入参进行判断</td>
+</tr>
+<tr>
+<td>hasLength(String text) / hasLength(String text, String message)</td>
+<td>当 text 为 null 或长度为 0 时抛出异常</td>
+</tr>
+<tr>
+<td>hasText(String text) / hasText(String text, String message)</td>
+<td>text 不能为 null 且必须至少包含一个非空格的字符, 否则抛出异常</td>
+</tr>
+<tr>
+<td>isInstanceOf(Class clazz, Object obj) / isInstanceOf(Class type, Object obj, String message)</td>
+<td>如果 obj 不能被正确造型为 clazz 指定的类将抛出异常</td>
+</tr>
+<tr>
+<td>isAssignable(Class superType, Class subType) / isAssignable(Class superType, Class subType, String message)</td>
+<td>subType 必须可以按类型匹配于 superType, 否则将抛出异常</td>
+</tr>
+</tbody></table>
+<h3 id="6-小结"><a href="#6-小结" class="headerlink" title="6. 小结"></a>6. 小结</h3><p>本文介绍了一些常用的 Spring 工具类, 其中大部分 Spring 工具类不但可以在基于 Spring 的应用中使用, 还可以在其它的应用中使用. </p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/algos/2019/09/03/AQS%E8%A7%A3%E6%9E%90(%E4%B8%80)/" rel="prev" title="AQS解析(一)">
+      <i class="fa fa-chevron-left"></i> AQS解析(一)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/algos/2019/11/01/ArrayList%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="next" title="ArrayList源码解析">
+      ArrayList源码解析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7"><span class="nav-text">1. 文件相关工具</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96"><span class="nav-text">1.1 文件读取</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C"><span class="nav-text">1.2 文件操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-%E5%B1%9E%E6%80%A7%E6%93%8D%E4%BD%9C"><span class="nav-text">1.3 属性操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-4-%E5%A4%84%E7%90%86%E7%89%B9%E6%AE%8A%E7%BC%96%E7%A0%81"><span class="nav-text">1.4 处理特殊编码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Web%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7"><span class="nav-text">2. Web相关工具</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-WebApplicationContextUtils"><span class="nav-text">2.1 WebApplicationContextUtils</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-WebUtils"><span class="nav-text">2.2 WebUtils</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E8%BF%87%E6%BB%A4%E5%99%A8%E5%92%8C%E7%9B%91%E5%90%AC%E5%99%A8"><span class="nav-text">3. 过滤器和监听器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-%E5%BB%B6%E8%BF%9F%E5%8A%A0%E8%BD%BD%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-text">3.1 延迟加载过滤器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-text">3.2 中文乱码过滤器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-%E8%AF%B7%E6%B1%82%E8%B7%9F%E8%B8%AA%E6%97%A5%E5%BF%97%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-text">3.3 请求跟踪日志过滤器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-4-WebAppRootListener-%E7%9B%91%E5%90%AC%E5%99%A8%E4%B8%8ELog4jConfigListener-%E7%9B%91%E5%90%AC%E5%99%A8"><span class="nav-text">3.4 WebAppRootListener 监听器与Log4jConfigListener 监听器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-5-Introspector-%E7%BC%93%E5%AD%98%E6%B8%85%E9%99%A4%E7%9B%91%E5%90%AC%E5%99%A8"><span class="nav-text">3.5 Introspector 缓存清除监听器</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E7%89%B9%E6%AE%8A%E5%AD%97%E7%AC%A6%E8%BD%AC%E4%B9%89"><span class="nav-text">4. 特殊字符转义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E6%96%B9%E6%B3%95%E5%85%A5%E5%8F%82%E6%A3%80%E6%B5%8B%E5%B7%A5%E5%85%B7%E7%B1%BB"><span class="nav-text">5. 方法入参检测工具类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E5%B0%8F%E7%BB%93"><span class="nav-text">6. 小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="annwyn"
+      src="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+  <p class="site-author-name" itemprop="name">annwyn</p>
+  <div class="site-description" itemprop="description">annwyn's blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/algos/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/algos/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/annwynAval" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;annwynAval" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:296674162@qq.com" title="E-Mail → mailto:296674162@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">annwyn</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.ui.min.js"></script>
+
+<script src="/algos/js/utils.js"></script>
+
+<script src="/algos/js/motion.js"></script>
+
+
+<script src="/algos/js/schemes/pisces.js"></script>
+
+
+<script src="/algos/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="mask-icon" href="https://angular.cn/assets/images/favicons/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/algos/css/main.css">
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"192.168.88.34","root":"/algos/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="RocketMQ设计基于主题的发布与订阅模式, 其核心功能包括消息发送, 消息存储, 消息消费. 整体设计追求简单与性能单一.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ入门">
+<meta property="og:url" content="http://192.168.88.34/algos/2020/01/09/RocketMQ%E5%85%A5%E9%97%A8/index.html">
+<meta property="og:site_name" content="江湖夜雨十年灯">
+<meta property="og:description" content="RocketMQ设计基于主题的发布与订阅模式, 其核心功能包括消息发送, 消息存储, 消息消费. 整体设计追求简单与性能单一.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ftp.bmp.ovh/imgs/2020/04/f87c9feac930ace4.png">
+<meta property="og:image" content="https://i.niupic.com/images/2020/04/28/7wSd.png">
+<meta property="og:image" content="https://i.niupic.com/images/2020/04/28/7xsQ.png">
+<meta property="og:image" content="https://i.niupic.com/images/2020/04/30/7zcO.jpg">
+<meta property="article:published_time" content="2020-01-09T04:14:24.000Z">
+<meta property="article:modified_time" content="2020-01-09T04:14:24.000Z">
+<meta property="article:author" content="annwyn">
+<meta property="article:tag" content="annwyn&#39;s blog, 江湖夜雨十年灯">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ftp.bmp.ovh/imgs/2020/04/f87c9feac930ace4.png">
+
+<link rel="canonical" href="http://192.168.88.34/algos/2020/01/09/RocketMQ%E5%85%A5%E9%97%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RocketMQ入门 | 江湖夜雨十年灯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/algos/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖夜雨十年灯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/algos/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/algos/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/algos/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">23</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://192.168.88.34/algos/2020/01/09/RocketMQ%E5%85%A5%E9%97%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+      <meta itemprop="name" content="annwyn">
+      <meta itemprop="description" content="annwyn's blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖夜雨十年灯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RocketMQ入门
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-09 12:14:24" itemprop="dateCreated datePublished" datetime="2020-01-09T12:14:24+08:00">2020-01-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/algos/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%9B%B8%E5%85%B3/" itemprop="url" rel="index"><span itemprop="name">分布式相关</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>RocketMQ设计基于主题的发布与订阅模式, 其核心功能包括消息发送, 消息存储, 消息消费. 整体设计追求简单与性能单一.</p>
+<span id="more"></span>
+
+<h2 id="1-消息队列"><a href="#1-消息队列" class="headerlink" title="1. 消息队列"></a>1. 消息队列</h2><h3 id="1-1-为什么使用消息队列"><a href="#1-1-为什么使用消息队列" class="headerlink" title="1.1 为什么使用消息队列"></a>1.1 为什么使用消息队列</h3><p>消息队列主要解决的问题一共有三个:</p>
+<ol>
+<li>解耦: 解决不同重要程度、不同能力级别系统之间依赖</li>
+<li>异步: 当存在一对多调用时, 可以发一条消息给消息系统, 让消息系统通知相关系统</li>
+<li>削峰: 主要解决瞬时写压力大于应用服务能力导致消息丢失、系统奔溃等问题</li>
+</ol>
+<h3 id="1-2-消息队列优缺点"><a href="#1-2-消息队列优缺点" class="headerlink" title="1.2 消息队列优缺点"></a>1.2 消息队列优缺点</h3><p>消息队列的优点就是上述说的: 解耦、异步、削峰. 而主要的缺点如下:</p>
+<ol>
+<li>系统可用性降低: 引入消息队列后, 需要保证消息队列的高可用性, 避免MQ宕机导致整个系统不可用.</li>
+<li>系统复杂度提高: 引入消息队列后, 需要解决: 如何保证消息不会重复消费, 如何处理消息丢失的情况, 如何保证消息的顺序等问题.</li>
+<li>一致性问题: 引入消息队列后, 需要解决当某个节点处理成功, 而其他节点处理失败的情况下, 如何保证数据的一致性.</li>
+</ol>
+<h3 id="1-3-主流消息队列区别"><a href="#1-3-主流消息队列区别" class="headerlink" title="1.3 主流消息队列区别"></a>1.3 主流消息队列区别</h3><p>现在主流的消息队列有Kafka、ActiveMQ、RabbitMQ、RocketMQ. 其中各个MQ之间的优缺点如下</p>
+<table>
+<thead>
+<tr>
+<th><div style="width: 100px">特性</div></th>
+<th><div style="width: 200px">ActiveMQ</div></th>
+<th><div style="width: 200px">RabbitMQ</div></th>
+<th><div style="width: 200px">RocketMQ</div></th>
+<th><div style="width: 200px">Kafka</div></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>单机吞吐量</td>
+<td>万级, 比 RocketMQ、Kafka 低一个数量级</td>
+<td>同 ActiveMQ</td>
+<td>10 万级, 支撑高吞吐</td>
+<td>10 万级, 高吞吐, 一般配合大数据类的系统来进行实时数据计算、日志采集等场景</td>
+</tr>
+<tr>
+<td>topic 数量对吞吐量的影响</td>
+<td></td>
+<td></td>
+<td>topic 可以达到几百/几千的级别, 吞吐量会有较小幅度的下降, 这是 RocketMQ 的一大优势, 在同等机器下, 可以支撑大量的 topic</td>
+<td>topic 从几十到几百个时候, 吞吐量会大幅度下降, 在同等机器下, Kafka 尽量保证 topic 数量不要过多, 如果要支撑大规模的 topic, 需要增加更多的机器资源</td>
+</tr>
+<tr>
+<td>时效性</td>
+<td>ms 级</td>
+<td>微秒级, 这是 RabbitMQ 的一大特点, 延迟最低</td>
+<td>ms 级</td>
+<td>延迟在 ms 级以内</td>
+</tr>
+<tr>
+<td>可用性</td>
+<td>高, 基于主从架构实现高可用</td>
+<td>同 ActiveMQ</td>
+<td>非常高, 分布式架构</td>
+<td>非常高, 分布式, 一个数据多个副本, 少数机器宕机, 不会丢失数据, 不会导致不可用</td>
+</tr>
+<tr>
+<td>消息可靠性</td>
+<td>有较低的概率丢失数据</td>
+<td>基本不丢</td>
+<td>经过参数优化配置, 可以做到 0 丢失</td>
+<td>同 RocketMQ</td>
+</tr>
+<tr>
+<td>功能支持</td>
+<td>MQ 领域的功能极其完备</td>
+<td>基于 erlang 开发, 并发能力很强, 性能极好, 延时很低</td>
+<td>MQ 功能较为完善, 还是分布式的, 扩展性好</td>
+<td>功能较为简单, 主要支持简单的 MQ 功能, 在大数据领域的实时计算以及日志采集被大规模使用</td>
+</tr>
+</tbody></table>
+<h2 id="2-RocketMQ角色"><a href="#2-RocketMQ角色" class="headerlink" title="2. RocketMQ角色"></a>2. RocketMQ角色</h2><p><img src="https://ftp.bmp.ovh/imgs/2020/04/f87c9feac930ace4.png" alt="RocketMQ架构设计"></p>
+<h3 id="2-1-NameServer"><a href="#2-1-NameServer" class="headerlink" title="2.1 NameServer"></a>2.1 NameServer</h3><p>NameServer的功能是为整个MQ集群提供服务协调与治理, 具体就是记录维护Topic、Broker的信息, 及存储Broker信息并监控Broker的运行状态(包括master和slave). 为client提供路由能力. 具体实现和zookeeper有区别, 每个NameServer节点是互相独立的, 不进行数据同步, 也就不存在任何的选主或者主从切换之类的问题, 因此NameServer与Zookeeper相比更轻量级. </p>
+<h3 id="2-2-Broker"><a href="#2-2-Broker" class="headerlink" title="2.2 Broker"></a>2.2 Broker</h3><p>Broker是具体提供业务的服务器, 每个Broker节点与所有的NameServer节点保持长连接及心跳, 并会定时将Topic信息注册到NameServer, 顺带一提底层的通信和连接都是基于Netty实现的. Broker中可以分为master和slave, 一个master对应多个salve, 一个slave对应一个master, master和slave通过配置相同的brokerName, 不同的brokerId(master为0)成为主从关系. </p>
+<p>Broker与NameServer之间建立长连接, 定时(每隔30s)注册Topic信息到所有NameServer. NameServer定时(每隔10s)扫描所有存活broker的连接, 如果NameServer超过2分钟没有收到心跳, 则NameServer断开与Broker的连接. </p>
+<h3 id="2-3-Topic和Queue"><a href="#2-3-Topic和Queue" class="headerlink" title="2.3 Topic和Queue"></a>2.3 Topic和Queue</h3><p>RocketMQ的Topic/Queue和JMS中的Topic/Queue概念有一定的差异. 在RocketMQ中, 一个Topic中的数据会分布在各个broker中, 而broker中的topic数据又会被切分成若干份, 其中一份数据就是一个Queue, 这样就能突破单点的资源限制从而实现水平扩展.<br><img src="https://i.niupic.com/images/2020/04/28/7wSd.png" alt="Topic和Queue"></p>
+<h3 id="2-4-Tag"><a href="#2-4-Tag" class="headerlink" title="2.4 Tag"></a>2.4 Tag</h3><p>标签可以被认为是对Topic的进一步细化. 一般在相同业务模块中通过引入标签来标记不同用途的消息. </p>
+<h3 id="2-5-Message"><a href="#2-5-Message" class="headerlink" title="2.5 Message"></a>2.5 Message</h3><p>Message是消息的载体. 一个 Message 必须指定 topic, 相当于寄信的地址. Message 还有一个可选的 tag 设置, 以便消费端可以基于 tag 进行过滤消息. 也可以添加额外的键值对, 例如你需要一个业务 key 来查找 broker 上的消息, 方便在开发过程中诊断问题. </p>
+<h3 id="2-6-Producer"><a href="#2-6-Producer" class="headerlink" title="2.6 Producer"></a>2.6 Producer</h3><p>Producer从NameServer集群中的随机选择其中一个节点建立长连接, 定期从NameServer获取Topic路由信息, 并向提供Topic服务的Master建立长连接, 且定时向Master发送心跳. </p>
+<p>Producer每隔30s(由ClientConfig的pollNameServerInterval决定)从NameServer获取所有topic队列的最新情况, 这意味着如果Broker不可用, Producer在最多30s之后才能够感知Broker不可用, 同时在此期间发往Broker的所有消息都会失败. </p>
+<p>Producer每隔30s(由ClientConfig中heartbeatBrokerInterval决定)向所有关联的broker发送心跳, Broker每隔10s中扫描所有存活的连接, 如果Broker在2分钟内没有收到心跳数据, 则关闭与Producer的连接. </p>
+<h3 id="2-7-Consumer"><a href="#2-7-Consumer" class="headerlink" title="2.7 Consumer"></a>2.7 Consumer</h3><p>Consumer从NameServer集群中随机选择其中一个节点建立长连接, 定期从NameServer取Topic路由信息, 并向提供Topic服务的Master、Slave建立长连接, 且定时向Master、Slave发送心跳. Consumer既可以从Master订阅消息, 也可以从Slave订阅消息, 订阅规则由Broker配置决定. </p>
+<p>与Producer类似的, Consumer每隔30s(由ClientConfig的pollNameServerInterval决定)从NameServer获取topic的最新队列情况, 这意味着如果Broker不可用, Consumer最多需要30s之后才能感知到Broker不可用. </p>
+<p>Consumer每隔30s(由ClientConfig中heartbeatBrokerInterval决定)向所有关联的broker发送心跳, Broker每隔10s扫描所有存活的连接, 若某个连接2分钟内没有发送心跳数据, 则关闭连接, 并向该Consumer Group的所有Consumer发出通知, Group内的Consumer重新分配队列, 然后继续消费. </p>
+<p>当Consumer得到master宕机通知后, 转向slave消费, slave不能保证master的消息100%都同步过来了, 因此会有少量的消息丢失. 但是一旦master恢复, 未同步过去的消息会被最终消费掉. </p>
+<p>在RocketMQ中, 消费者客户端有两种方式从队列中获取消息并消费. </p>
+<ol>
+<li>push方式: 有MQ主动将消息推送给消费者. 采用这种方式, 可以尽可能实时的将消息发送给消费者进行消费. 但是在消费者的处理消息能力较弱时(比如, 消费者端的业务系统处理一条消息的流程比较复杂, 其中的调用链路比较多导致消费时间比较久. 概括起来地说就是”慢消费问题”), MQ不断给消费者push消息, 消费端的缓冲区可能会溢出, 导致异常.</li>
+<li>pull方式: 由消费者客户端主动向MQ拉取消息. 采用pull方式, 如何设置Pull消息的频率需要重点去考虑. 比如, 可能1分钟内连续来了1000条消息, 然后2小时内没有新消息产生（概括起来说就是”消息延迟与忙等待”）. 如果每次Pull的时间间隔比较久, 会增加消息的延迟, 即消息到达消费者的时间加长, MQ中消息的堆积量变大；若每次Pull的时间间隔较短, 但是在一段时间内MQ中并没有任何消息可以消费, 那么会产生很多无效的Pull请求的RPC开销, 影响MQ整体的网络性能. 并且在pull方式下, 需要consumer端完成比较多的事情(例如维护消息消费的偏移量等), 因此在实际应用中使用的比较少. </li>
+</ol>
+<h3 id="2-8-广播模式与集群模式"><a href="#2-8-广播模式与集群模式" class="headerlink" title="2.8 广播模式与集群模式"></a>2.8 广播模式与集群模式</h3><p>广播模式: 当消费者使用广播模式时, 每条消息都会被所有的消费者实例消费一次. 比如有5个消费者实例, 当一条消息到达时, 会被5个消费者都消费一次.</p>
+<p>集群模式: 当消费者使用集群模式时, 每条消息只会被消费者实例中的某一个消费一次. 比如有5个消费者实例, 当一条消息到达时, 可能会被第一个消费者消费, 可能会被第二个消费者消费.</p>
+<p>在默认情况下, RocketMQ消费者以集群模式进行消费. </p>
+<h2 id="3-消息持久化"><a href="#3-消息持久化" class="headerlink" title="3. 消息持久化"></a>3. 消息持久化</h2><p>在ActiveMQ中, 消息持久化依赖MySQL, 当接收到消息后, 会将数据存放入MySQL中. 在RockerMQ中, 消息持久化依赖文件系统, 当接收到消息后, 会将数据放入文件中. 如果使用MySQL存储, 当单表数据过大时, 其IO性能会出现瓶颈, 一旦DB出现故障, 整个MQ也将不可用, 并且也不方便实现集群. </p>
+<p>通过使用mmap的方式(零拷贝), 可以省去向用户态的内存复制, 提高速度. 这种机制在Java中是通过MappedByteBuffer实现的. RocketMQ充分利用了上述特性, 提高消息存盘和网络发送的速度. 这里需要注意的是, 采用MappedByteBuffer这种内存映射的方式有几个限制, 其中之一是一次只能映射1.5~2G 的文件至用户态的虚拟内存, 这也是为何RocketMQ 默认设置单个CommitLog日志数据文件为1G的原因了. </p>
+<h3 id="3-1-消息存储结构"><a href="#3-1-消息存储结构" class="headerlink" title="3.1 消息存储结构"></a>3.1 消息存储结构</h3><p>RocketMQ消息的存储是由ConsumeQueue和CommitLog配合完成的, 消息真正的物理存储文件是CommitLog, ConsumeQueue是消息的逻辑队列, 类似数据库的索引文件, 存储的是指向物理存储的地址.<br><img src="https://i.niupic.com/images/2020/04/28/7xsQ.png" alt="消息存储结构"></p>
+<p>CommitLog: 所有的消息数据都会存放在commitLog目录中, 其中每个文件大小为1G, 可以在配置文件中配置storePathCommitLog.</p>
+<p>ConsumerQueue: 存储消息在commitLog中的索引, 加快读取commitLog的速度. 该目录下的文件和queue是一一对应的(目录结构大致为<code>&#123;ConsumerQueue&#125;/&#123;topicName&#125;/&#123;queueId&#125;/000000</code>), 可以在配置文件中配置storePathConsumeQueue</p>
+<p>IndexFile: 为消息查询提供了一种通过key或者时间来查询消息的方法, 这种通过IndexFile来查询消息的方法不影响发送与消费消息的主流程. 可以在配置文件中配置storePathIndex</p>
+<h3 id="3-2-刷盘机制"><a href="#3-2-刷盘机制" class="headerlink" title="3.2 刷盘机制"></a>3.2 刷盘机制</h3><p>RocketMQ的消息最终会存储到磁盘上, 这样既能保证断电后恢复, 又可以让存储的消息量超出内存的限制. RocketMQ为了提高性能, 会尽可能地保证磁盘的顺序写. 消息在通过Producer写入RocketMQ的时候, 有两种写磁盘方式, 分布式同步刷盘和异步刷盘. </p>
+<p>同步刷盘: 在返回写成功状态时, 消息已经被写入磁盘. 具体流程是, 消息写入内存的PAGECACHE后, 立刻通知刷盘线程刷盘, 然后等待刷盘完成, 刷盘线程执行完成后唤醒等待的线程, 返回消息写成功的状态. </p>
+<p>异步刷盘: 在返回写成功状态时, 消息可能只是被写入了内存的PAGECACHE, 写操作的返回快, 吞吐量大; 当内存里的消息量积累到一定程度时, 统一触发写磁盘动作, 快速写入. </p>
+<h2 id="4-高可用和主从复制"><a href="#4-高可用和主从复制" class="headerlink" title="4. 高可用和主从复制"></a>4. 高可用和主从复制</h2><h3 id="4-1-高可用"><a href="#4-1-高可用" class="headerlink" title="4.1 高可用"></a>4.1 高可用</h3><p>一般在部署RocketMQ时, 都是使用多master多slave方式进行部署, master和slave之间主要依靠不同的brokerId进行区分. 其中master主要负责broker的读与写操作, slave负责broker的读操作.</p>
+<p>在消息创建时, 因为RocketMQ会将topic的多个queue创建在多个broker中. 此时如果某个broker的master不可用, 生产者仍然可以将消息发送到其他master上. 在消息消费时, 并不需要配置从master还是slave中读取消息. 因为在master繁忙或者不可用时, 消费者会自动切换到slave中进行消费. 有了这种自动切换机制, 当master出现故障时, 消费者仍然能从slave中读取消息.</p>
+<h3 id="4-2-主从复制"><a href="#4-2-主从复制" class="headerlink" title="4.2 主从复制"></a>4.2 主从复制</h3><p>如果broker中有master与slave, 消息就需要从master复制到slave上. 消息同步方式有同步与异步两种.</p>
+<p>同步复制: 在消息生产者发送消息时, 需要等master和slave都写入成功后才将结果返回给生产者. 在这种方式下, 如果master出现故障, slave上有所有的备份数据, 容易恢复. 但是这种方式也会增加数据写入延迟, 降低系统吞吐量.</p>
+<p>异步复制: 在消息生产者发送消息时, 只要master写入成功就立即将结果返回给生产者. 在这种方式下, 系统拥有较低的延迟和较高的吞吐量, 但是如果master出现故障, 有些数据因为没有被写入slave, 有可能会出现消息丢失的情况. </p>
+<p> 在一般情况下, 建议刷盘机制设置为异步刷盘, 主从复制设置为同步复制. 这样可以降低磁盘的写操作, 同时也可以确保即使master宕机数据也不会丢失.</p>
+<h2 id="5-负载均衡"><a href="#5-负载均衡" class="headerlink" title="5. 负载均衡"></a>5. 负载均衡</h2><h3 id="5-1-Producer负债均衡"><a href="#5-1-Producer负债均衡" class="headerlink" title="5.1 Producer负债均衡"></a>5.1 Producer负债均衡</h3><p>在发送消息时, 默认会轮询所有的queue进行发送, 以达到让消息平均分布在不同的queue上, 由于queue可以分布在不同的broker上, 所以发送的消息就发送到不同的broker上.</p>
+<h3 id="5-2-Consumer负债均衡"><a href="#5-2-Consumer负债均衡" class="headerlink" title="5.2 Consumer负债均衡"></a>5.2 Consumer负债均衡</h3><p>在广播模式下, 每个消费者都会消费同一条消息, 所以也就没有必要讨论负债均衡了.</p>
+<p>在集群模式下, 按照queue的数量和消费者的实例数量, 平均分配queue给每个消费者. 比如集群中存在5个queue与2个消费者的情况下, RocketMQ指定第一个消费者消费2个queue, 第二个消费者消费3个queue. 如果后续增加消费者, 每个consumer分配到的queue就会相应减少. 当consumer数量超过queue数量时, 多余的consumer就不能进行消息消费.</p>
+<h2 id="6-消息重试"><a href="#6-消息重试" class="headerlink" title="6. 消息重试"></a>6. 消息重试</h2><p>对于顺序消息, 当消费者消费消息失败后, RocketMQ会不断进行消息重试(间隔1秒), 此时应用会出现消息消费被阻塞的情况. 因此务必保证应用能及时监控并处理失败的情况, 避免阻塞的情况. </p>
+<p>对于无序消息, 当消费者消费消息失败后, 可以通过设置的返回状态达到重试的结果. 需要注意的是, 在广播模式下不提供重试的特性, 即消费失败, 不再进行重试, 继续消费新的消息.</p>
+<table>
+<thead>
+<tr>
+<th>重试次数</th>
+<th>间隔时间</th>
+<th>重试次数</th>
+<th>间隔时间</th>
+<th>重试次数</th>
+<th>间隔时间</th>
+<th>重试次数</th>
+<th>间隔时间</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>10秒</td>
+<td>5</td>
+<td>3分钟</td>
+<td>9</td>
+<td>7分钟</td>
+<td>13</td>
+<td>20分钟</td>
+</tr>
+<tr>
+<td>2</td>
+<td>30秒</td>
+<td>6</td>
+<td>4分钟</td>
+<td>10</td>
+<td>8分钟</td>
+<td>14</td>
+<td>30分钟</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1分钟</td>
+<td>7</td>
+<td>5分钟</td>
+<td>11</td>
+<td>9分钟</td>
+<td>15</td>
+<td>1小时</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2分钟</td>
+<td>8</td>
+<td>6分钟</td>
+<td>12</td>
+<td>10分钟</td>
+<td>16</td>
+<td>2小时</td>
+</tr>
+</tbody></table>
+<p>RocketMQ默认允许每条消息重试16次, 当重试16次后仍然失败, 消息将不再投递. 同时RocketMQ允许配置最大重试次数, 当超过16次的情况下, 每次间隔依旧是2小时.</p>
+<h3 id="6-1-死信队列"><a href="#6-1-死信队列" class="headerlink" title="6.1 死信队列"></a>6.1 死信队列</h3><p>当一条消息消费失败超过16次之后, RocketMQ并不会立即将消息丢弃, 而是将其放入死信队列中. 该队列中的消息无法被消费者正常消费, 并且在3天后会自动删除. 一个死信队列包含了对应GroupId产生的所有死信消息, 而不论该消息属于哪个Topic.  </p>
+<p>在一条消息进入死信队列时, 意味着某些原因导致消费者无法正常消费该消息, 因此需要开发人员进行特殊处理, 排查可疑因素并且解决问题后, 可疑重新发送该消息, 让消费者重新消费一次.</p>
+<h2 id="7-常见问题"><a href="#7-常见问题" class="headerlink" title="7. 常见问题"></a>7. 常见问题</h2><h3 id="7-1-消息重复"><a href="#7-1-消息重复" class="headerlink" title="7.1 消息重复"></a>7.1 消息重复</h3><p>对于所有的MQ来说, 都是有可能出现重复消费问题的, 因为这种问题不是MQ自己保重的, 而是需要开发人员进行保证. 在RocketMQ中, 生产者发送消息后收到应答表示是否发送成功. 而消费者在消费完数据后返回应答表示是否消费成功, 在正常情况下可以确保消息不重复. 但是在以下情况就有出现重复消息的可能.</p>
+<h5 id="1-发送重复的消息"><a href="#1-发送重复的消息" class="headerlink" title="1. 发送重复的消息"></a>1. 发送重复的消息</h5><p>当一条消息已经成功发送到服务端并完成持久化, 此时出现了网络闪断或者客户端宕机, 导致服务端对客户端应答失败, 生产者意识到消息发送失败并尝试再次发送消息. 在消费者消费时会收到两条内容相同并且MessageID也相同的消息.</p>
+<h5 id="2-消费者消费重复消息"><a href="#2-消费者消费重复消息" class="headerlink" title="2. 消费者消费重复消息"></a>2. 消费者消费重复消息</h5><p>某条消息被消费者消费完成并且完成业务处理, 当客户端向服务端进行应答反馈时, 出现网络闪断或者服务端宕机. 为了保证消息至少被消费一次, 消息队列RocketMQ的服务端将在重启或者网络恢复后再次尝试投递之前已被处理过的消息, 之后消费者会收到与上条消息内容相同并且MessageID也相同的消息. </p>
+<h5 id="3-负债均衡时消息重复"><a href="#3-负债均衡时消息重复" class="headerlink" title="3. 负债均衡时消息重复."></a>3. 负债均衡时消息重复.</h5><p>当消息队列RocketMQ的broker或者客户端重启或者扩容时, 会触发ReBalance操作, 此时消费者可能会收到重复的消息.</p>
+<h5 id="处理方式"><a href="#处理方式" class="headerlink" title="处理方式"></a>处理方式</h5><p>因为MessageID存在重复的可能, 所以在发送消息时, 最好以业务唯一标识作为关键依据(<code>message.setKey(&quot;业务Id&quot;);</code>). 消费者在进行消费时, 根据业务标识进行去重, 确保不会发送重复消费的问题.</p>
+<h3 id="7-2-消息可靠性"><a href="#7-2-消息可靠性" class="headerlink" title="7.2 消息可靠性"></a>7.2 消息可靠性</h3><p>在使用MQ时, 有一个原则就是数据不能多一条, 也不能少一条. 不能多, 就是前面说的重复消费问题. 不能少, 就是说数据不能丢失.</p>
+<p>一条消息从发送到消费完成, 一共可以分为三个部分, 其中任何一个阶段都可能丢失消息.<br><img src="https://i.niupic.com/images/2020/04/30/7zcO.jpg" alt="发送到消费完成"></p>
+<h5 id="生产阶段"><a href="#生产阶段" class="headerlink" title="生产阶段"></a>生产阶段</h5><p>无论是使用同步还是异步方式发送消息, 最后都会获取一个状态值或者异常, 只要处理好返回值与异常, 一般都能保证消息发送时不丢失. 另外可以设置合理的重试次数, 保证消息发送的可靠性.</p>
+<h5 id="存储阶段"><a href="#存储阶段" class="headerlink" title="存储阶段"></a>存储阶段</h5><p>在默认情况下(异步刷盘), 消息只要到达broker端, 会先存入内存中, 然后立即返回响应给生产者, 之后broker定期批量的将一个或多个消息持久化到磁盘中. 在这种方式下, 如果服务器宕机会导致消息无法及时持久化, 内存中的部分数据就会丢失. 此时如果希望broker端不丢消息, 保证消息的可靠性, 可以将刷盘机制改为同步刷盘, 即消息到达broker之后, 需要成功持久化才能返回响应给生产者. </p>
+<p>需要注意的是, 在同步刷盘模式下, 如果broker在同步刷盘时间内(默认5s)未能成功持久化, 会返回FLUSH_DISK_TIMEOUT给生产者. 这种情况下, 可以选择直接忽视. 但一般情况下, 建议重新发送该消息. 虽然可能会导致消息重复, 不过只要消费端做好消息重复的处理就没问题.</p>
+<p>在集群部署时, 为了保证消息不丢失, 消息还需要从master节点复制到slave节点. </p>
+<p>在同步复制的情况下, 消息到达master之后, master需要将消息发送到slave上, 等到salve返回响应之后master才将响应返回给生产者. 这种情况下, 由于需要等到slave的响应会造成一定的性能损失. </p>
+<p>在异步复制的情况下, 消息到达master之后, master直接返回响应, 之后在特定的时间将数据发送到slave上. 这种情况下, 如果master宕机, 在slave上会暂时找不到未完成同步的数据.</p>
+<p>一般情况下, 建议使用同步刷盘 + 异步复制的组合, 这种情况下, 可以保证只要消息到达broker并且成功持久化, 即使master宕机导致消息无法到达slave, 只要在master重启后就可以再次进行复制将消息发送到slave上, 从而保证消息不丢失同时保证一定的性能. 如果需要严格的保证消息不丢失, 可以采用同步刷盘 + 同步复制的组合. 不过无论哪种组合, 都需要生产者的配合, 根据返回的状态值和捕获的异常来判断是否需要补偿重试.</p>
+<h5 id="消费阶段"><a href="#消费阶段" class="headerlink" title="消费阶段"></a>消费阶段</h5><p>消费者从broker拉取消息, 然后执行相应的业务逻辑. 一旦执行成功, 将会返回<code>ConsumeConcurrentlyStatus.CONSUME_SUCCESS</code>状态给 Broker. 如果Broker未收到消费确认响应或收到其他状态, 消费者下次还会再次拉取到该条消息进行重试. 这样的方式有效避免了消费者消费过程发生异常, 或者消息在网络传输中丢失的情况.  </p>
+<p>在消费阶段最重要的就是返回的消息状态, 只有在业务真正处理成功后, 才返回<code>ConsumeConcurrentlyStatus.CONSUME_SUCCESS</code>, 否则需要返回<code>ConsumeConcurrentlyStatus.RECONSUME_LATER</code>或者<code>null</code>或者异常. 只要处理好返回值, 那么在消费阶段也不太可能出现消息丢失的状况.</p>
+<h3 id="7-3-消息有序性"><a href="#7-3-消息有序性" class="headerlink" title="7.3 消息有序性"></a>7.3 消息有序性</h3><p>消息有序性指的是可以按照消息的发送顺序来进行消费, 可以分为分区有序和全局有序. 一个topic内所有的消息按照先进先出的顺序进行发布和消费, 这种称为全局顺序. 一个queue内所有的消息按照先进先出的顺序进行发布和消费, 这种称为分区有序. 一般情况下, 如果要保证消息的有序性, 只需要保证分区有序性即可, 全局有序性可以忽略.</p>
+<p>RocketMQ在默认情况下消息发送会采用轮询的方式把消息发送到不同的分区队列, 而消费消息的时候从多个queue上拉取消息. 这种情况发送和消费是不能保证顺序的. 但是如果控制发送的消息按照顺序依次发送到同一个queue中, 消费的时候只从这个queue上拉取, 就可以保证有序性.  </p>
+<h5 id="producer端"><a href="#producer端" class="headerlink" title="producer端"></a>producer端</h5><p>在producer端中只要确保消息顺序唯一要做的事情就是将消息路由到特定的分区上, 在RocketMQ中可以通过MessageQueueSelector来实现分区的选择.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MessageQueueSelector</span> </span>&#123;</span><br><span class="line">    <span class="function">MessageQueue <span class="title">select</span><span class="params">(<span class="keyword">final</span> List&lt;MessageQueue&gt; mqs, <span class="keyword">final</span> Message msg, <span class="keyword">final</span> Object arg)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="consumer端"><a href="#consumer端" class="headerlink" title="consumer端"></a>consumer端</h5><p>一个consumer对应一个或者多个queue. 因此只要queue中能保证有序性, 那么consumer端无论使用pull方式还是push方式, 从同一个queue中获取到的消息都是可以保证有序性的.</p>
+<h3 id="7-4-消息积压"><a href="#7-4-消息积压" class="headerlink" title="7.4 消息积压"></a>7.4 消息积压</h3><p>如果消费端出现问题导致不消费或者消费速度极其慢. 比如消费端在消费完消息后需要将结果写入到MySQL中, 而此时MySQL正好宕机, 导致消费端无法消费. 这种情况下, 就会导致消息积压, 验证影响MQ的性能.</p>
+<p>这种情况下, 并不能只修复消费端就结束了. 此时需要增加消费者数量进行快速消费. 但是由于堆积的topic中queue数量固定, 能增加消费者数量也是有限的. 这种情况下, 可以添加一个用于分发的消费者, 将堆积的消息分发到另外一个临时的topic中, 并根据实际需要指定queue数量, 进而加速消费者消费.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/algos/2019/12/21/ThreadPoolExecutor%E5%88%86%E6%9E%90/" rel="prev" title="ThreadPoolExecutor分析">
+      <i class="fa fa-chevron-left"></i> ThreadPoolExecutor分析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/algos/2020/02/11/Java%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%85%A5%E9%97%A8/" rel="next" title="Java虚拟机入门">
+      Java虚拟机入门 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97"><span class="nav-text">1. 消息队列</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97"><span class="nav-text">1.1 为什么使用消息队列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E4%BC%98%E7%BC%BA%E7%82%B9"><span class="nav-text">1.2 消息队列优缺点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E4%B8%BB%E6%B5%81%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E5%8C%BA%E5%88%AB"><span class="nav-text">1.3 主流消息队列区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-RocketMQ%E8%A7%92%E8%89%B2"><span class="nav-text">2. RocketMQ角色</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-NameServer"><span class="nav-text">2.1 NameServer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-Broker"><span class="nav-text">2.2 Broker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-Topic%E5%92%8CQueue"><span class="nav-text">2.3 Topic和Queue</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-Tag"><span class="nav-text">2.4 Tag</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-Message"><span class="nav-text">2.5 Message</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-6-Producer"><span class="nav-text">2.6 Producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-Consumer"><span class="nav-text">2.7 Consumer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-%E5%B9%BF%E6%92%AD%E6%A8%A1%E5%BC%8F%E4%B8%8E%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F"><span class="nav-text">2.8 广播模式与集群模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%B6%88%E6%81%AF%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-text">3. 消息持久化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E6%B6%88%E6%81%AF%E5%AD%98%E5%82%A8%E7%BB%93%E6%9E%84"><span class="nav-text">3.1 消息存储结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E5%88%B7%E7%9B%98%E6%9C%BA%E5%88%B6"><span class="nav-text">3.2 刷盘机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E9%AB%98%E5%8F%AF%E7%94%A8%E5%92%8C%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6"><span class="nav-text">4. 高可用和主从复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-text">4.1 高可用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6"><span class="nav-text">4.2 主从复制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1"><span class="nav-text">5. 负载均衡</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-Producer%E8%B4%9F%E5%80%BA%E5%9D%87%E8%A1%A1"><span class="nav-text">5.1 Producer负债均衡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-Consumer%E8%B4%9F%E5%80%BA%E5%9D%87%E8%A1%A1"><span class="nav-text">5.2 Consumer负债均衡</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E6%B6%88%E6%81%AF%E9%87%8D%E8%AF%95"><span class="nav-text">6. 消息重试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E6%AD%BB%E4%BF%A1%E9%98%9F%E5%88%97"><span class="nav-text">6.1 死信队列</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="nav-text">7. 常见问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-%E6%B6%88%E6%81%AF%E9%87%8D%E5%A4%8D"><span class="nav-text">7.1 消息重复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-%E6%B6%88%E6%81%AF%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-text">7.2 消息可靠性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-3-%E6%B6%88%E6%81%AF%E6%9C%89%E5%BA%8F%E6%80%A7"><span class="nav-text">7.3 消息有序性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-4-%E6%B6%88%E6%81%AF%E7%A7%AF%E5%8E%8B"><span class="nav-text">7.4 消息积压</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="annwyn"
+      src="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+  <p class="site-author-name" itemprop="name">annwyn</p>
+  <div class="site-description" itemprop="description">annwyn's blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/algos/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/algos/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/annwynAval" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;annwynAval" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:296674162@qq.com" title="E-Mail → mailto:296674162@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">annwyn</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.ui.min.js"></script>
+
+<script src="/algos/js/utils.js"></script>
+
+<script src="/algos/js/motion.js"></script>
+
+
+<script src="/algos/js/schemes/pisces.js"></script>
+
+
+<script src="/algos/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

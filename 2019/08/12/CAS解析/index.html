@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="mask-icon" href="https://angular.cn/assets/images/favicons/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/algos/css/main.css">
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"192.168.88.34","root":"/algos/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="CAS全称是 compare and swap, 即比较并交换, 它是一种原子操作, 同时 CAS 是一种乐观机制. java.util.concurrent 包很多功能都是建立在 CAS 之上, 如 ReenterLock 内部的 AQS, 各种原子类, 其底层都用 CAS来实现原子操作.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CAS解析">
+<meta property="og:url" content="http://192.168.88.34/algos/2019/08/12/CAS%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:site_name" content="江湖夜雨十年灯">
+<meta property="og:description" content="CAS全称是 compare and swap, 即比较并交换, 它是一种原子操作, 同时 CAS 是一种乐观机制. java.util.concurrent 包很多功能都是建立在 CAS 之上, 如 ReenterLock 内部的 AQS, 各种原子类, 其底层都用 CAS来实现原子操作.">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-08-12T05:10:29.000Z">
+<meta property="article:modified_time" content="2019-08-12T05:10:29.000Z">
+<meta property="article:author" content="annwyn">
+<meta property="article:tag" content="annwyn&#39;s blog, 江湖夜雨十年灯">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://192.168.88.34/algos/2019/08/12/CAS%E8%A7%A3%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CAS解析 | 江湖夜雨十年灯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/algos/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖夜雨十年灯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/algos/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/algos/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/algos/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">23</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://192.168.88.34/algos/2019/08/12/CAS%E8%A7%A3%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+      <meta itemprop="name" content="annwyn">
+      <meta itemprop="description" content="annwyn's blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖夜雨十年灯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CAS解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-12 13:10:29" itemprop="dateCreated datePublished" datetime="2019-08-12T13:10:29+08:00">2019-08-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/algos/categories/JAVA/" itemprop="url" rel="index"><span itemprop="name">JAVA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>CAS全称是 compare and swap, 即比较并交换, 它是一种原子操作, 同时 CAS 是一种乐观机制. java.util.concurrent 包很多功能都是建立在 CAS 之上, 如 ReenterLock 内部的 AQS, 各种原子类, 其底层都用 CAS来实现原子操作. </p>
+<span id="more"></span>
+<h2 id="1-sun-misc-Unsafe"><a href="#1-sun-misc-Unsafe" class="headerlink" title="1. sun.misc.Unsafe"></a>1. sun.misc.Unsafe</h2><p>简单讲一下这个类. Java 无法直接访问底层操作系统, 而是通过本地 (native) 方法来访问. 不过尽管如此, JVM 还是开了一个后门, JDK 中有一个类 Unsafe, 它提供了硬件级别的原子操作. 这个类尽管里面的方法都是 public 的, 但是并没有办法使用它们, JDK API 文档也没有提供任何关于这个类的方法的解释. 总而言之, 对于 Unsafe 类的使用都是受限制的, 只有授信的代码才能获得该类的实例, 当然 JDK 库里面的类是可以随意使用的. </p>
+<p>从第一行的描述可以了解到 Unsafe 提供了硬件级别的操作, 比如说获取某个属性在内存中的位置, 比如说修改对象的字段值, 即使它是私有的. 不过Java本身就是为了屏蔽底层的差异, 对于一般的开发而言也很少会有这样的需求. </p>
+<p>简单看下该类中的几个方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 可以用来获取给定的 paramField 的内存地址偏移量, 这个值对于给定的 field 是唯一的且是固定不变的. </span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">long</span> <span class="title">staticFieldOffset</span><span class="params">(Field paramField)</span></span>; </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">long</span> <span class="title">allocateMemory</span><span class="params">(<span class="keyword">long</span> paramLong)</span></span>; <span class="comment">// 分配内存</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">long</span> <span class="title">reallocateMemory</span><span class="params">(<span class="keyword">long</span> paramLong1, <span class="keyword">long</span> paramLong2)</span></span>; <span class="comment">// 扩充内存</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">freeMemory</span><span class="params">(<span class="keyword">long</span> paramLong)</span></span>; <span class="comment">// 释放内存的</span></span><br></pre></td></tr></table></figure>
+<h2 id="2-CAS"><a href="#2-CAS" class="headerlink" title="2. CAS"></a>2. CAS</h2><p>CAS (Compare and Swap) 即比较并交换, 设计并发算法时常用到的一种技术, java.util.concurrent 包全完建立在 CAS 之上, 没有 CAS 也就没有此包, 可见 CAS 的重要性. </p>
+<p>***CAS 有三个操作数: 内存值 V, 旧的预期值 A, 要修改的值 B, 当且仅当预期值 A 和内存值 V 相同时, 将内存值修改为 B 并返回 true, 否则什么都不做并返回 false. ***</p>
+<p>CAS 也是通过 Unsafe 实现的, 看下 Unsafe 下的三个方法: </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 包含要修改的字段对象, 字段在对象内的偏移量, 字段的期望值, 用于更新字段的新值</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">boolean</span> <span class="title">compareAndSwapObject</span><span class="params">(Object paramObject1, <span class="keyword">long</span> paramLong, Object paramObject2, Object paramObject3)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">boolean</span> <span class="title">compareAndSwapInt</span><span class="params">(Object paramObject, <span class="keyword">long</span> paramLong, <span class="keyword">int</span> paramInt1, <span class="keyword">int</span> paramInt2)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">boolean</span> <span class="title">compareAndSwapLong</span><span class="params">(Object paramObject, <span class="keyword">long</span> paramLong1, <span class="keyword">long</span> paramLong2, <span class="keyword">long</span> paramLong3)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>不使用 CAS 的情况下, 如果要实现一个比较并交换 int 值的方法, 那么代码大致是这样的: </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">int</span> value = <span class="number">1</span>;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">compareAndSwapInt</span><span class="params">(<span class="keyword">int</span> param)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(value == param) &#123;</span><br><span class="line">        value = param;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上代码如果在并发下运行肯定是有问题的, 解决办法也很简单, 给该方法加锁同步变成一个原子操作就可以了. CAS 也是一样的道理, 比较, 交换也是一组原子操作, 不会被外部打断, 先根据 paramLong/paramLong1 获取到内存当中当前的内存值 V, 在将内存值 V 和原值 A 作比较, 要是相等就修改为要修改的值 B, 由于 CAS 都是硬件级别的操作, 因此效率会高一些. </p>
+<h2 id="3-借-AtomicInteger-分析-CAS"><a href="#3-借-AtomicInteger-分析-CAS" class="headerlink" title="3. 借 AtomicInteger 分析 CAS"></a>3. 借 AtomicInteger 分析 CAS</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AtomicInteger</span> <span class="keyword">extends</span> <span class="title">Number</span> <span class="keyword">implements</span> <span class="title">java</span>.<span class="title">io</span>.<span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Unsafe unsafe = Unsafe.getUnsafe();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> valueOffset;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            valueOffset = unsafe.objectFieldOffset(AtomicInteger.class.getDeclaredField(<span class="string">&quot;value&quot;</span>));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception ex) &#123; </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> Error(ex); </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> value;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">AtomicInteger</span><span class="params">(<span class="keyword">int</span> initialValue)</span> </span>&#123;</span><br><span class="line">        value = initialValue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">addAndGet</span><span class="params">(<span class="keyword">int</span> delta)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> unsafe.getAndAddInt(<span class="keyword">this</span>, valueOffset, delta) + delta;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上代码是 JDK1.8 中 AtomicInteger 的部分代码, 关于代码中出现的几个成员变量:</p>
+<ol>
+<li>unsafe 是 CAS 的核心, 查看前面部分说明.</li>
+<li>valueOffset 是变量值在内存中的偏移地址, 因为 Unsafe 就是根据内存偏移地址获取数据的原值的.</li>
+<li>value 是用 volatile 修饰的, 这是非常关键的.</li>
+</ol>
+<p>再来查看下 addAndGet 方法, 该方法底层利用 CAS 技术保证了并发安全, 其中 unsafe.getAndAddInt() 方法如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">getAndAddInt</span><span class="params">(Object var1, <span class="keyword">long</span> var2, <span class="keyword">int</span> var4)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> var5;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        var5 = <span class="keyword">this</span>.getIntVolatile(var1, var2);</span><br><span class="line">    &#125; <span class="keyword">while</span>(!<span class="keyword">this</span>.compareAndSwapInt(var1, var2, var5, var5 + var4)); <span class="comment">// 自旋</span></span><br><span class="line">    <span class="keyword">return</span> var5;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>var5通过<code>this.getIntVolatile(var1, var2)</code>方法获取, 是个 native 方法, 其目的是获取 var1 在 var2 偏移量的值, 其中 var1 就是 AtomicInteger, var2 是 valueOffset 值. </p>
+<p>上述代码中 compareAndSwapInt 就是实现 CAS 的核心方法,其原理是如果 var1 中的 value 值和 var5 相等, 就证明没有其他线程改变过这个变量, 那么就把 value 值更新为 var5 + var4, 其中 var4 是更新的增量值；反之如果没有更新, 那么 CAS 就一直采用自旋的方式继续进行操作(其实就是个 while 死循环), 这一步也是一个原子操作. </p>
+<p>以上代码的执行过程:</p>
+<ol>
+<li>设定 AtomicInteger 的 value 原始值为 A, 从 Java 内存模型得知, 线程1和线程2各自持有一份 value 的副本, 值都是 A. </li>
+<li>线程1通过 getIntVolatile(var1, var2) 拿到 value 值 A, 这时线程1被挂起. </li>
+<li>线程2也通过 getIntVolatile(var1, var2) 方法获取到 value 值 A, 并执行 compareAndSwapInt 方法比较内存值也为 A, 成功修改内存值为 B. </li>
+<li>这时线程1恢复执行 compareAndSwapInt 方法比较, 发现自己手里的值 A 和内存的值 B 不一致, 说明该值已经被其它线程提前修改过了. </li>
+<li>线程1重新执行 getIntVolatile(var1, var2) 再次获取 value 值, 因为变量 value 被 volatile 修饰, 所以其它线程对它的修改, 线程1总是能够看到, 线程1继续执行  compareAndSwapInt 进行比较替换, 直到成功. </li>
+</ol>
+<h2 id="4-CAS常见问题"><a href="#4-CAS常见问题" class="headerlink" title="4. CAS常见问题"></a>4. CAS常见问题</h2><h3 id="4-1-ABA-问题"><a href="#4-1-ABA-问题" class="headerlink" title="4.1 ABA 问题"></a>4.1 ABA 问题</h3><p>例如线程1从内存位置 V 取出 A, 这时候线程2也从内存位置 V 取出 A, 此时线程1处于挂起状态, 线程2将位置 V 的值改成 B, 最后再改成 A, 这时候线程1再执行, 发现位置 V 的值没有变化, 尽管线程1也更改成功了, 但是不代表这个过程就是没有问题的. java.util.concurrent 包为了解决这个问题, 提供了一个带有标记的原子引用类 AtomicStampedReference, 它可以通过控制变量值的版本来保证 CAS 的正确性. </p>
+<blockquote>
+<p>现有一个用单向链表实现的栈, 栈顶元素为 A, A.next 为 B, 期望用 CAS 将栈顶替换成 B.  现有线程1获取了元素 A, 此时线程1被挂起, 线程2也获取了元素 A, 并将 A, B 出栈, 再push D, C, A, 这时线程1恢复执行 CAS, 因为此时栈顶元素依然为 A, 线程1执行成功, 栈顶元素变成了 B, 但 B.next 为 null, 这就会导致 C, D 被丢掉了.</p>
+</blockquote>
+<h3 id="4-2-自旋问题"><a href="#4-2-自旋问题" class="headerlink" title="4.2 自旋问题"></a>4.2 自旋问题</h3><p>从源码可以知道所说的自旋无非就是操作结果失败后继续循环操作, 这种操作也称之为自旋锁, 是一种乐观锁机制, 一般来说都会给一个限定的自选次数, 防止进入死循环. </p>
+<p>自旋锁的优点是不需要休眠当前线程, 因为自旋锁使用者一般保持锁时间非常短, 因此选择自旋而不是休眠当前线程是提高并发性能的关键点, 这是因为减少了很多不必要的线程上下文切换开销. 但是, 如果CAS一直操作不成功, 会造成长时间原地自旋, 会给CPU带来非常大的执行开销. </p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/algos/2019/07/09/synchronized%E4%B8%8Evolatile/" rel="prev" title="synchronized与volatile">
+      <i class="fa fa-chevron-left"></i> synchronized与volatile
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/algos/2019/09/03/AQS%E8%A7%A3%E6%9E%90(%E4%B8%80)/" rel="next" title="AQS解析(一)">
+      AQS解析(一) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-sun-misc-Unsafe"><span class="nav-text">1. sun.misc.Unsafe</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-CAS"><span class="nav-text">2. CAS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%80%9F-AtomicInteger-%E5%88%86%E6%9E%90-CAS"><span class="nav-text">3. 借 AtomicInteger 分析 CAS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-CAS%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="nav-text">4. CAS常见问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-ABA-%E9%97%AE%E9%A2%98"><span class="nav-text">4.1 ABA 问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E8%87%AA%E6%97%8B%E9%97%AE%E9%A2%98"><span class="nav-text">4.2 自旋问题</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="annwyn"
+      src="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+  <p class="site-author-name" itemprop="name">annwyn</p>
+  <div class="site-description" itemprop="description">annwyn's blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/algos/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/algos/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/annwynAval" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;annwynAval" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:296674162@qq.com" title="E-Mail → mailto:296674162@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">annwyn</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.ui.min.js"></script>
+
+<script src="/algos/js/utils.js"></script>
+
+<script src="/algos/js/motion.js"></script>
+
+
+<script src="/algos/js/schemes/pisces.js"></script>
+
+
+<script src="/algos/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

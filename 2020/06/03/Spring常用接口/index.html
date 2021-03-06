@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="mask-icon" href="https://angular.cn/assets/images/favicons/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/algos/css/main.css">
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"192.168.88.34","root":"/algos/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Spring的核心就是Bean管理, 关于Bean定义了很多可扩展性的接口, 通过这些扩展接口可以实现很多功能.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring常用接口">
+<meta property="og:url" content="http://192.168.88.34/algos/2020/06/03/Spring%E5%B8%B8%E7%94%A8%E6%8E%A5%E5%8F%A3/index.html">
+<meta property="og:site_name" content="江湖夜雨十年灯">
+<meta property="og:description" content="Spring的核心就是Bean管理, 关于Bean定义了很多可扩展性的接口, 通过这些扩展接口可以实现很多功能.">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-03T04:14:24.000Z">
+<meta property="article:modified_time" content="2020-06-03T04:14:24.000Z">
+<meta property="article:author" content="annwyn">
+<meta property="article:tag" content="annwyn&#39;s blog, 江湖夜雨十年灯">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://192.168.88.34/algos/2020/06/03/Spring%E5%B8%B8%E7%94%A8%E6%8E%A5%E5%8F%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spring常用接口 | 江湖夜雨十年灯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/algos/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖夜雨十年灯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/algos/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/algos/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/algos/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">23</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://192.168.88.34/algos/2020/06/03/Spring%E5%B8%B8%E7%94%A8%E6%8E%A5%E5%8F%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+      <meta itemprop="name" content="annwyn">
+      <meta itemprop="description" content="annwyn's blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖夜雨十年灯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring常用接口
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-03 12:14:24" itemprop="dateCreated datePublished" datetime="2020-06-03T12:14:24+08:00">2020-06-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/algos/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Spring的核心就是Bean管理, 关于Bean定义了很多可扩展性的接口, 通过这些扩展接口可以实现很多功能.</p>
+<span id="more"></span>
+<p><a target="_blank" rel="noopener" href="https://i.niupic.com/images/2020/06/01/8aIj.PNG">Spring Bean生命周期</a></p>
+<h2 id="1-BeanFactory"><a href="#1-BeanFactory" class="headerlink" title="1. BeanFactory"></a>1. BeanFactory</h2><p>这是Spring最核心的接口, 定义了获取bean以及bean基础属性的相关方法, 此接口需要重写的场景非常少, 一般在程序中注入/获取使用即可. 阅读BeanFactory相关源码可以从<code>DefaultListableBeanFactory</code>开始.</p>
+<h2 id="2-ApplicationContext"><a href="#2-ApplicationContext" class="headerlink" title="2. ApplicationContext"></a>2. ApplicationContext</h2><p>应用上下文(ApplicationContext)建立在BeanFactory基础之上提供更多面向应用的功能. 可以简单理解为BeanFactory是Spring框架的基础设施, 面向Spring本身. 而ApplicationContext面向使用Spring框架的开发者, 几乎所有的应用场合都可以直接使用ApplicationContext而非底层的BeanFactory. 常用的实现类为<code>AnnotationConfigApplicationContext</code>, <code>FileSystemXmlApplicationContext</code>.</p>
+<h2 id="3-Aware接口"><a href="#3-Aware接口" class="headerlink" title="3. Aware接口"></a>3. Aware接口</h2><p>在Spring中定义了一系列的Aware接口, 在Spring容器启动之后会回调这部分接口. </p>
+<h3 id="3-1-ApplicationContextAware"><a href="#3-1-ApplicationContextAware" class="headerlink" title="3.1 ApplicationContextAware"></a>3.1 ApplicationContextAware</h3><p>由类名可知, 继承该类后可以获取<code>ApplicationContext</code>对象.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ApplicationContextAware</span> <span class="keyword">extends</span> <span class="title">Aware</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setApplicationContext</span><span class="params">(ApplicationContext applicationContext)</span> <span class="keyword">throws</span> BeansException</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-BeanFactoryAware"><a href="#3-2-BeanFactoryAware" class="headerlink" title="3.2 BeanFactoryAware"></a>3.2 BeanFactoryAware</h3><p>由类名可知, 继承该类后可以获取<code>BeanFactory</code>对象.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BeanFactoryAware</span> <span class="keyword">extends</span> <span class="title">Aware</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setBeanFactory</span><span class="params">(BeanFactory beanFactory)</span> <span class="keyword">throws</span> BeansException</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-3-BeanNameAware"><a href="#3-3-BeanNameAware" class="headerlink" title="3.3 BeanNameAware"></a>3.3 BeanNameAware</h3><p>由类名可知, 继承该类后可以获取容器中配置的Id属性.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BeanNameAware</span> <span class="keyword">extends</span> <span class="title">Aware</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setBeanName</span><span class="params">(String name)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-4-MessageSourceAware"><a href="#3-4-MessageSourceAware" class="headerlink" title="3.4 MessageSourceAware"></a>3.4 MessageSourceAware</h3><p>由类名可知, 继承该类后可以获取<code>MessageSource</code>对象.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MessageSourceAware</span> <span class="keyword">extends</span> <span class="title">Aware</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setMessageSource</span><span class="params">(MessageSource messageSource)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-5-ApplicationEventPublisherAware"><a href="#3-5-ApplicationEventPublisherAware" class="headerlink" title="3.5 ApplicationEventPublisherAware"></a>3.5 ApplicationEventPublisherAware</h3><p>由类名可知, 继承该类后可以获取<code>ApplicationEventPublisher</code>对象.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ApplicationEventPublisherAware</span> <span class="keyword">extends</span> <span class="title">Aware</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setApplicationEventPublisher</span><span class="params">(ApplicationEventPublisher applicationEventPublisher)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-6-ResourceLoaderAware"><a href="#3-6-ResourceLoaderAware" class="headerlink" title="3.6 ResourceLoaderAware"></a>3.6 ResourceLoaderAware</h3><p>由类名可知, 继承该类后可以获取<code>ResourceLoader</code>对象.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ResourceLoaderAware</span> <span class="keyword">extends</span> <span class="title">Aware</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setResourceLoader</span><span class="params">(ResourceLoader resourceLoader)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-InitializingBean"><a href="#4-InitializingBean" class="headerlink" title="4. InitializingBean"></a>4. InitializingBean</h2><p>当需要在bean属性设置完成后做些特殊的处理, 可以继承该类实现. 效果等同于<code>init-method</code>配置与@PostConstruct注解. 三种方式的执行顺序为: 注解 -&gt; InitializingBean接口 -&gt; init-method配置.</p>
+<h2 id="5-DisposableBean"><a href="#5-DisposableBean" class="headerlink" title="5. DisposableBean"></a>5. DisposableBean</h2><p>与InitializingBean相反, 当需要在bean销毁之前做些特殊的处理, 可以继承该类实现. 效果等同于destroy-method配置与@PreDestory注解. 三种方式的执行顺序为: 注解 -&gt; DisposableBean接口 -&gt; destroy-method.</p>
+<h2 id="6-BeanFactoryPostProcessor"><a href="#6-BeanFactoryPostProcessor" class="headerlink" title="6. BeanFactoryPostProcessor"></a>6. BeanFactoryPostProcessor</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BeanFactoryPostProcessor</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">postProcessBeanFactory</span><span class="params">(ConfigurableListableBeanFactory beanFactory)</span> <span class="keyword">throws</span> BeansException</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该接口是实现Spring容器功能扩展的重要接口. 该接口下只有一个方法, 在容器中bean实例化之前回调该方法, 在postProcessBeanFactory方法中, 我们可以获取Bean的所有配置信息并且可以修改任意属性.</p>
+<h2 id="7-BeanPostProcessor"><a href="#7-BeanPostProcessor" class="headerlink" title="7. BeanPostProcessor"></a>7. BeanPostProcessor</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">default</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">default</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该接口主要在容器进行bean实例化过程中进行回调. <code>postProcessBeforeInitialization</code>方法在bean初始化方法(PostConstruct注解, InitializingBean与<code>init-method</code>定义的方法)调用前被调用. <code>postProcessAfterInitialization</code>方法在bean初始化完成后进行调用.</p>
+<h2 id="8-InstantiationAwareBeanPostProcessor"><a href="#8-InstantiationAwareBeanPostProcessor" class="headerlink" title="8. InstantiationAwareBeanPostProcessor"></a>8. InstantiationAwareBeanPostProcessor</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">InstantiationAwareBeanPostProcessor</span> <span class="keyword">extends</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">default</span> Object <span class="title">postProcessBeforeInstantiation</span><span class="params">(Class&lt;?&gt; beanClass, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">default</span> <span class="keyword">boolean</span> <span class="title">postProcessAfterInstantiation</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">default</span> PropertyValues <span class="title">postProcessProperties</span><span class="params">(PropertyValues pvs, Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 已经被Deprecated, 使用postProcessProperties进行替代.</span></span><br><span class="line">    <span class="meta">@Deprecated</span></span><br><span class="line">    <span class="function"><span class="keyword">default</span> PropertyValues <span class="title">postProcessPropertyValues</span><span class="params">(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> pvs;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该接口主要在容器进行bean实例化过程中进行回调. 与BeanPostProcessor不同的是, 该类的三个方法会在BeanPostProcessor调用前被调用.</p>
+<ol>
+<li><code>postProcessBeforeInstantiation</code>在bean实例化之前调用.</li>
+<li><code>postProcessAfterInstantiation</code>在bean实例化之后与注入属性之前调用</li>
+<li><code>postProcessProperties</code>在<code>postProcessAfterInstantiation</code>执行并返回true之后调用, 该方法返回的PropertyValues为该bean进行属性赋值.<br>后续的两个方法就是<code>BeanPostProcessor</code>中的方法, 调用时机与上面的<code>BeanPostProcessor</code>一致. 两者的主要区别是: </li>
+<li><code>BeanPostProcessor</code>在bean实例化之后进行调用, 继承改接口可以对bean初始化进行定制化处理.</li>
+<li><code>InstantiationAwareBeanPostProcessor</code>在整个bean实例化过程中都会被调用, 主要用于替换bean的默认创建方式, 比如aop通过扩展接口生成代理对象. 在日常使用中, 更推荐使用<code>InstantiationAwareBeanPostProcessorAdapter</code>.<br>这部分更多的代码请参考Spring源码(<code>AbstractAutowireCapableBeanFactory#createBean(String, RootBeanDefinition, Object[])</code>)</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/algos/2020/05/03/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" rel="prev" title="分布式事务">
+      <i class="fa fa-chevron-left"></i> 分布式事务
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/algos/2020/06/24/Spring%E4%BA%8B%E5%8A%A1%E7%AE%80%E4%BB%8B/" rel="next" title="Spring事务简介">
+      Spring事务简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-BeanFactory"><span class="nav-text">1. BeanFactory</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-ApplicationContext"><span class="nav-text">2. ApplicationContext</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Aware%E6%8E%A5%E5%8F%A3"><span class="nav-text">3. Aware接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-ApplicationContextAware"><span class="nav-text">3.1 ApplicationContextAware</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-BeanFactoryAware"><span class="nav-text">3.2 BeanFactoryAware</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-BeanNameAware"><span class="nav-text">3.3 BeanNameAware</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-MessageSourceAware"><span class="nav-text">3.4 MessageSourceAware</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-5-ApplicationEventPublisherAware"><span class="nav-text">3.5 ApplicationEventPublisherAware</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-6-ResourceLoaderAware"><span class="nav-text">3.6 ResourceLoaderAware</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-InitializingBean"><span class="nav-text">4. InitializingBean</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-DisposableBean"><span class="nav-text">5. DisposableBean</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-BeanFactoryPostProcessor"><span class="nav-text">6. BeanFactoryPostProcessor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-BeanPostProcessor"><span class="nav-text">7. BeanPostProcessor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-InstantiationAwareBeanPostProcessor"><span class="nav-text">8. InstantiationAwareBeanPostProcessor</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="annwyn"
+      src="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+  <p class="site-author-name" itemprop="name">annwyn</p>
+  <div class="site-description" itemprop="description">annwyn's blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/algos/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/algos/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/annwynAval" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;annwynAval" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:296674162@qq.com" title="E-Mail → mailto:296674162@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">annwyn</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.ui.min.js"></script>
+
+<script src="/algos/js/utils.js"></script>
+
+<script src="/algos/js/motion.js"></script>
+
+
+<script src="/algos/js/schemes/pisces.js"></script>
+
+
+<script src="/algos/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

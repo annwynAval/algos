@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://angular.cn/assets/images/favicons/favicon.ico">
+  <link rel="mask-icon" href="https://angular.cn/assets/images/favicons/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/algos/css/main.css">
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"192.168.88.34","root":"/algos/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在一个程序中运行多个线程本身不会导致线程安全问题, 问题在于多个线程同时处理一个资源而导致了其与预期结果不一致, 这即是线程安全问题. 实际上这些问题只有在多个线程向这些资源做了写操作才可能发生, 只要资源没有发生变化, 多个线程读取相同的资源就是安全的.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="synchronized与volatile">
+<meta property="og:url" content="http://192.168.88.34/algos/2019/07/09/synchronized%E4%B8%8Evolatile/index.html">
+<meta property="og:site_name" content="江湖夜雨十年灯">
+<meta property="og:description" content="在一个程序中运行多个线程本身不会导致线程安全问题, 问题在于多个线程同时处理一个资源而导致了其与预期结果不一致, 这即是线程安全问题. 实际上这些问题只有在多个线程向这些资源做了写操作才可能发生, 只要资源没有发生变化, 多个线程读取相同的资源就是安全的.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.niupic.com/images/2019/11/21/_1158.png">
+<meta property="og:image" content="https://i.niupic.com/images/2019/11/21/_1157.png">
+<meta property="og:image" content="https://i.niupic.com/images/2020/05/22/7Ud7.PNG">
+<meta property="og:image" content="https://i.niupic.com/images/2020/05/22/7Udb.png">
+<meta property="article:published_time" content="2019-07-09T04:19:43.000Z">
+<meta property="article:modified_time" content="2019-07-09T04:19:43.000Z">
+<meta property="article:author" content="annwyn">
+<meta property="article:tag" content="annwyn&#39;s blog, 江湖夜雨十年灯">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.niupic.com/images/2019/11/21/_1158.png">
+
+<link rel="canonical" href="http://192.168.88.34/algos/2019/07/09/synchronized%E4%B8%8Evolatile/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>synchronized与volatile | 江湖夜雨十年灯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/algos/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖夜雨十年灯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/algos/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/algos/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/algos/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">23</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://192.168.88.34/algos/2019/07/09/synchronized%E4%B8%8Evolatile/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+      <meta itemprop="name" content="annwyn">
+      <meta itemprop="description" content="annwyn's blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖夜雨十年灯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          synchronized与volatile
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-07-09 12:19:43" itemprop="dateCreated datePublished" datetime="2019-07-09T12:19:43+08:00">2019-07-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/algos/categories/JAVA/" itemprop="url" rel="index"><span itemprop="name">JAVA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在一个程序中运行多个线程本身不会导致线程安全问题, 问题在于多个线程同时处理一个资源而导致了其与预期结果不一致, 这即是线程安全问题. 实际上这些问题只有在多个线程向这些资源做了写操作才可能发生, 只要资源没有发生变化, 多个线程读取相同的资源就是安全的.</p>
+<span id="more"></span>
+<h2 id="1-简介"><a href="#1-简介" class="headerlink" title="1. 简介"></a>1. 简介</h2><p>在JAVA中, 所有的变量都是保存在主内存中并且每个线程都有自己独立的工作内存. 线程需要读写主内存的共享变量时需要先将该变量拷贝一份副本到自己的工作内存, 然后在自己的工作内存中对该变量进行所有操作, 线程工作内存对变量副本完成操作之后需要将结果同步至主内存.<br><img src="https://i.niupic.com/images/2019/11/21/_1158.png" alt="JMM"><br><img src="https://i.niupic.com/images/2019/11/21/_1157.png" alt="JMM内存模型"></p>
+<p>大致了解JAVA内存模型之后, 需要了解并发的3个核心概念.</p>
+<ol>
+<li>原子性: 和数据库事务的原子性概念差不多, 即一个操作(有可能包含有多个子操作)要么全部执行(生效), 要么全部都不执行(都不生效). </li>
+<li>可见性: 当多个线程并发访问共享变量时, 一个线程对共享变量的修改, 其它线程能够立即看到. </li>
+<li>有序性: 程序执行的顺序按照代码的先后顺序执行. 因为处理器为了提高程序运行效率, 可能会对输入代码进行优化, 它不保证程序中各个语句的执行先后顺序同代码中的顺序一致, 但是它会保证程序最终执行结果和代码顺序执行的结果是一致的-即指令重排序. </li>
+</ol>
+<p>在上一张图的例子中, 主内存中的变量是共享的, 所有线程都可以读写, 而线程工作内存又是线程私有的, 线程间不可互相访问. 那在多线程场景下, 图上的线程A和线程B同时操作共享内存里的同一个变量, 那么主内存内的变量数据就会被破坏. 也就是说主内存内的此变量不是线程安全的. </p>
+<h2 id="2-synchronized"><a href="#2-synchronized" class="headerlink" title="2. synchronized"></a>2. synchronized</h2><ol>
+<li><p>保证方法或代码块操作的原子性<br>synchronized保证方法内部或代码块内部资源(数据)的互斥访问. 即同一时间, 最多只能有一个线程在访问. 具体而言, 就是被synchronized关键字描述的方法或代码块在多线程环境下同一时间只能由一个线程进行访问, 在持有当前锁的线程执行完成之前, 其他线程想要调用相关方法就必须进行排队, 直到持有当前锁的线程执行结束, 释放锁, 下一个线程才可获取锁并执行.  </p>
+</li>
+<li><p>保证监视资源的可见性<br>保证多线程环境下对监视资源的数据同步. 即任何线程在获取到锁后的第一时间, 会先将共享内存中的数据复制到工作的缓存中; 任何线程在释放锁的第一时间, 会先将缓存中的数据复制到共享内存中. </p>
+</li>
+<li><p>保证线程间操作的有序性<br>synchronized的原子性保证了由其描述的方法或代码操作具有有序性, 同一时间只能由最多只能有一个线程访问, 不会触发JMM指令重排机制. </p>
+<h3 id="2-1-对象内存布局"><a href="#2-1-对象内存布局" class="headerlink" title="2.1 对象内存布局"></a>2.1 对象内存布局</h3></li>
+</ol>
+<p><img src="https://i.niupic.com/images/2020/05/22/7Ud7.PNG" alt="对象内存布局"><br>上图是JVM中每个对象在被创建之后的内存模型. 一共可以分为4个部分.</p>
+<ul>
+<li>markword: 一共占用8个字节, 存储了hascode, gc信息, 锁信息. 当我们进行synchronized加锁时, 其实是修改了markword的内容. </li>
+<li>klass pointer: 指向该对象的类.</li>
+<li>实际数据: 类成员变量所占用的位置, 图中没有详细的画出来.</li>
+<li>padding: 对象补齐. 一个对象占用的大小必须能被8整除, 如果无法整除, 需要padding进行补位.</li>
+</ul>
+<p><img src="https://i.niupic.com/images/2020/05/22/7Udb.png" alt="对象头"></p>
+<h3 id="2-2-synchronized升级"><a href="#2-2-synchronized升级" class="headerlink" title="2.2 synchronized升级"></a>2.2 synchronized升级</h3><p>synchronized在JDK 1.6之后, 进行了大量的优化. 在获取锁时, 需要一步步进行升级. 可以分为偏向锁, 轻量级锁, 以及重量级锁. 其中偏向锁, 轻量级锁都是属于用户态的锁, 而重量级锁属于内核态. 因此获取重量级锁消耗的性能比其他锁的消耗都要大很多. </p>
+<h5 id="偏向锁"><a href="#偏向锁" class="headerlink" title="偏向锁"></a>偏向锁</h5><p>在代码进入同步块的时候, 如果同步对象锁状态为无锁状态, 尝试使用CAS操作将markword中的threadId替换为当前线程, 如果CAS操作成功, 那么这个线程就拥有了该对象的锁. 如果CAS操作失败, 说明另外一个线程已经获取了偏向锁, 此时需要撤销另外一个线程获得的偏向锁, 并升级为轻量级锁. 偏向锁比较复杂, 此处不展开说明.</p>
+<p>当超过一个线程竞争某个对象时, 会发送偏向锁的撤销操作. 在偏向锁被撤销之后, 对象可能处于不可偏向的无锁状态以及不可偏向的已锁状态. 原因是在撤销时: </p>
+<ol>
+<li>原来获取偏向锁的线程已经执行完毕, 对象处于闲置状态, 此时对象直接被转换成不可偏向的无锁状态.</li>
+<li>原先获取偏向锁的线程还没有执行完毕, 偏向锁依旧有效, 此时对象就应该被转换为轻量级加锁的状态.</li>
+</ol>
+<h5 id="轻量级锁"><a href="#轻量级锁" class="headerlink" title="轻量级锁"></a>轻量级锁</h5><p>JVM先在当前线程的工作内存中创建一个空间用来存储锁记录, 然后把对象头中的markword复制到该锁记录中. 然后线程使用CAS操作尝试将对象头中的markword替换为指向锁记录的指针. 如果成功, 说明当前线程获取到了轻量级锁. 如果失败, 先进行自旋操作, 再次尝试CAS争抢. 如果仍然未争抢到, 膨胀为重量级锁. 在锁的持有者执行完毕后, 尝试使用CAS操作替换markword, 替换成功表示锁释放成功, 整个流程结束. 替换失败说明执行过程中, 有线程尝试获取锁但是没有成功, 轻量级锁升级为重量级锁, 此时释放轻量级锁之后, 还需要唤醒等待的线程.</p>
+<h2 id="3-volatile"><a href="#3-volatile" class="headerlink" title="3. volatile"></a>3. volatile</h2><p>JAVA中volatile关键字用来确保变量的更新操作可以通知到其他线程, 从而保持了可见性. 当使用volatile修改某变量后, 编译器与运行时都会注意到这个变量是共享的, 因此不会将该变量上的操作与其他内存操作一起重排序. 如果需要详细了解volatile, 还需要了解appens-before规则, as-if-serial语义以及内存屏障.</p>
+<h5 id="DCL-double-check-lock-单例是否需要添加单例"><a href="#DCL-double-check-lock-单例是否需要添加单例" class="headerlink" title="DCL(double check lock)单例是否需要添加单例?"></a>DCL(double check lock)单例是否需要添加单例?</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Single</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> Single instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Single <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span>(Single.class) &#123;</span><br><span class="line">                <span class="keyword">if</span>(instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> Single();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上代码是一个比较简单的单例. 上述的例子中instance是否需要使用volatile修改?</p>
+<p>解答这个问题, 首先需要了解在JAVA中, 一个对象创建的过程.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">         Object a = <span class="keyword">new</span> Object();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将以上JAVA文件编译为class文件后, 分析他的字节码. 可以发现一个对象的创建过程分为三步.</p>
+<ol>
+<li>虚拟机为对象在堆中分配内存. 此时类中的所有属性都是默认值</li>
+<li>调用对象的init方法.</li>
+<li>变量与堆内存中对象建立连接</li>
+</ol>
+<p>如果不加volatile关键字, 可能会出现instance变量分配完内存, 但未执行init方法, 即对象初始化到一半的情况, 此时如果另外一个线程进入第一个<code>instance == null</code>的判断, 会直接返回false并返回instance对象, 此时的线程并没有初始化内部的属性, 从而导致该线程访问的都是默认值.</p>
+<h2 id="4-JUC之Lock"><a href="#4-JUC之Lock" class="headerlink" title="4. JUC之Lock"></a>4. JUC之Lock</h2><p>Lock是java.util.concurrent包下的一个接口, 定义了一系列的锁操作方法. Lock接口主要有ReentrantLock、ReentrantReadWriteLock.ReadLock、ReentrantReadWriteLock.WriteLock等实现类. 与 Synchronized不同是: Lock提供了获取锁和释放锁等相关接口, 使得使用上更加灵活, 同时也可以做更加复杂的操作. 关于Lock的具体说明会在后续的文章中详细介绍.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/algos/2019/06/18/Sharding-JDBC%E5%85%A5%E9%97%A8/" rel="prev" title="Sharding-JDBC分库分表入门">
+      <i class="fa fa-chevron-left"></i> Sharding-JDBC分库分表入门
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/algos/2019/08/12/CAS%E8%A7%A3%E6%9E%90/" rel="next" title="CAS解析">
+      CAS解析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E7%AE%80%E4%BB%8B"><span class="nav-text">1. 简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-synchronized"><span class="nav-text">2. synchronized</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%AF%B9%E8%B1%A1%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-text">2.1 对象内存布局</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-synchronized%E5%8D%87%E7%BA%A7"><span class="nav-text">2.2 synchronized升级</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-volatile"><span class="nav-text">3. volatile</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-JUC%E4%B9%8BLock"><span class="nav-text">4. JUC之Lock</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="annwyn"
+      src="https://ftp.bmp.ovh/imgs/2020/03/535306740c08aa98.webp">
+  <p class="site-author-name" itemprop="name">annwyn</p>
+  <div class="site-description" itemprop="description">annwyn's blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/algos/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/algos/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/annwynAval" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;annwynAval" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:296674162@qq.com" title="E-Mail → mailto:296674162@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">annwyn</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/velocity-animate@1/velocity.ui.min.js"></script>
+
+<script src="/algos/js/utils.js"></script>
+
+<script src="/algos/js/motion.js"></script>
+
+
+<script src="/algos/js/schemes/pisces.js"></script>
+
+
+<script src="/algos/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
