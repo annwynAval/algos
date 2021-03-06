@@ -4,5 +4,5 @@
 
 [传送门1](http://blog.annwyn.top)
 
-[传送门2](http://messia.gitee.io/algos)
+[传送门2](http://annwynaval.github.io/algos/)
 
