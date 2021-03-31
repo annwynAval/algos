@@ -505,16 +505,16 @@
 <ol>
 <li>no-enviction: 禁止驱逐数据(redis4.0中默认策略), 会引发oom</li>
 </ol>
-<h2 id="7-集群"><a href="#7-集群" class="headerlink" title="7. 集群"></a>7. 集群</h2><h3 id="7-1-主从复制"><a href="#7-1-主从复制" class="headerlink" title="7.1 主从复制"></a>7.1 主从复制</h3><p>将master中的数据有效的复制到slave中, 一个master可以拥有多个slave, 一个slave对应一个master. 主要作用:<br><strong>1. 读写分离, master写,slave读</strong><br><strong>2. 负载均衡, 由slave分担master负载, 根据需求, 改变slave的数量从而分担数据读取负载.</strong><br><strong>3. 故障恢复: 当master出现问题, 由slave提供服务, 实现快速的故障恢复</strong><br><strong>4. 数据冗余, 实现数据热备份, 是持久化之外的一种数据冗余方式</strong><br><strong>5. 高可用基石, 基于主从复制, 构建哨兵模式与集群</strong><br><img src="https://ftp.bmp.ovh/imgs/2020/04/b2874d5852cdc46a.png" alt="主从复制"></p>
-<h4 id="7-1-1-阶段一-建立连接阶段"><a href="#7-1-1-阶段一-建立连接阶段" class="headerlink" title="7.1.1 阶段一: 建立连接阶段"></a>7.1.1 阶段一: 建立连接阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/84a97fbc33515215.png" alt="建立连接阶段"></p>
-<h4 id="7-1-2-阶段二-数据同步阶段"><a href="#7-1-2-阶段二-数据同步阶段" class="headerlink" title="7.1.2 阶段二: 数据同步阶段"></a>7.1.2 阶段二: 数据同步阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/4b1b94f6c5ac984e.png" alt="数据同步阶段"></p>
+<h2 id="7-集群"><a href="#7-集群" class="headerlink" title="7. 集群"></a>7. 集群</h2><h3 id="7-1-主从复制"><a href="#7-1-主从复制" class="headerlink" title="7.1 主从复制"></a>7.1 主从复制</h3><p>将master中的数据有效的复制到slave中, 一个master可以拥有多个slave, 一个slave对应一个master. 主要作用:<br><strong>1. 读写分离, master写,slave读</strong><br><strong>2. 负载均衡, 由slave分担master负载, 根据需求, 改变slave的数量从而分担数据读取负载.</strong><br><strong>3. 故障恢复: 当master出现问题, 由slave提供服务, 实现快速的故障恢复</strong><br><strong>4. 数据冗余, 实现数据热备份, 是持久化之外的一种数据冗余方式</strong><br><strong>5. 高可用基石, 基于主从复制, 构建哨兵模式与集群</strong><br><img src="https://ftp.bmp.ovh/imgs/2020/04/b2874d5852cdc46a.png" alt="1"></p>
+<h4 id="7-1-1-阶段一-建立连接阶段"><a href="#7-1-1-阶段一-建立连接阶段" class="headerlink" title="7.1.1 阶段一: 建立连接阶段"></a>7.1.1 阶段一: 建立连接阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/84a97fbc33515215.png" alt="2"></p>
+<h4 id="7-1-2-阶段二-数据同步阶段"><a href="#7-1-2-阶段二-数据同步阶段" class="headerlink" title="7.1.2 阶段二: 数据同步阶段"></a>7.1.2 阶段二: 数据同步阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/4b1b94f6c5ac984e.png" alt="3"></p>
 <p>需要注意的是: </p>
 <ol>
 <li>如果master数据量比较大, 数据同步阶段需要避免高峰期, 以免造成master阻塞.</li>
 <li>复制缓冲区大小设定不合理, 会导致数据溢出, 如果进行全量复制的过程太长, 进行部分复制时发现数据已经存在丢失的情况, 必须进行第二次全量复制, 从而导致slave陷入死循环. (可以修改缓冲区大小<code>repl-backlog-size</code>(默认1mb))</li>
 <li>当slave过多时, 建议由一主多从改为树状结构, 中间结点既是master, 也是slave. 需要注意的是, 在使用树状结构时, 由于层级深度, 导致深度越高的slave与最顶层的master之间数据同步出现延迟, 数据一致性变差.</li>
 </ol>
-<h4 id="7-1-3-阶段三-命令传播阶段"><a href="#7-1-3-阶段三-命令传播阶段" class="headerlink" title="7.1.3 阶段三: 命令传播阶段"></a>7.1.3 阶段三: 命令传播阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/a1244911263ba873.png" alt="命令传播阶段"></p>
+<h4 id="7-1-3-阶段三-命令传播阶段"><a href="#7-1-3-阶段三-命令传播阶段" class="headerlink" title="7.1.3 阶段三: 命令传播阶段"></a>7.1.3 阶段三: 命令传播阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/a1244911263ba873.png" alt="4"></p>
 <h4 id="7-1-4-主从复制常见问题"><a href="#7-1-4-主从复制常见问题" class="headerlink" title="7.1.4 主从复制常见问题"></a>7.1.4 主从复制常见问题</h4><h5 id="1-频繁的全量复制"><a href="#1-频繁的全量复制" class="headerlink" title="1. 频繁的全量复制"></a>1. 频繁的全量复制</h5><p>一旦master重启或者runid发生变化, 就会导致slave进行全量复制.</p>
 <p>解决方案: 本机保存上次的runid, 重启后恢复, 使所有的slave认为还是之前的master</p>
 <ol>
@@ -530,16 +530,16 @@
 <li>监控主从节点延迟判断, 如果salve延迟过大, 暂时屏蔽程序对slave的数据访问.</li>
 </ol>
 <h3 id="7-2-哨兵"><a href="#7-2-哨兵" class="headerlink" title="7.2 哨兵"></a>7.2 哨兵</h3><p>哨兵是一个分布式系统, 用于对主从结构中的每台服务器进行监控, 当出现故障时通过投票机制选择新的master并将所有的slave连接到新的master. 需要注意的是, 哨兵也是一台redis服务器, 只是不提供数据服务.</p>
-<h4 id="7-2-1-阶段一-监控阶段"><a href="#7-2-1-阶段一-监控阶段" class="headerlink" title="7.2.1 阶段一: 监控阶段"></a>7.2.1 阶段一: 监控阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/a72dbaa764c365ec.png" alt="监控阶段"><br><img src="https://ftp.bmp.ovh/imgs/2020/04/087e8a01f6c9155c.png" alt="监控阶段"></p>
-<h4 id="7-2-2-阶段二-通知阶段"><a href="#7-2-2-阶段二-通知阶段" class="headerlink" title="7.2.2 阶段二: 通知阶段"></a>7.2.2 阶段二: 通知阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/0f0116939dd13655.png" alt="通知阶段"></p>
+<h4 id="7-2-1-阶段一-监控阶段"><a href="#7-2-1-阶段一-监控阶段" class="headerlink" title="7.2.1 阶段一: 监控阶段"></a>7.2.1 阶段一: 监控阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/a72dbaa764c365ec.png" alt="5"><br><img src="https://ftp.bmp.ovh/imgs/2020/04/087e8a01f6c9155c.png" alt="6"></p>
+<h4 id="7-2-2-阶段二-通知阶段"><a href="#7-2-2-阶段二-通知阶段" class="headerlink" title="7.2.2 阶段二: 通知阶段"></a>7.2.2 阶段二: 通知阶段</h4><p><img src="https://ftp.bmp.ovh/imgs/2020/04/0f0116939dd13655.png" alt="7"></p>
 <h4 id="7-2-3-阶段三-故障转移阶段"><a href="#7-2-3-阶段三-故障转移阶段" class="headerlink" title="7.2.3 阶段三: 故障转移阶段"></a>7.2.3 阶段三: 故障转移阶段</h4><p>整个阶段可以分为以下步骤: </p>
 <ol>
 <li>发现问题</li>
 <li>竞选负责人</li>
 <li>选择新master</li>
-<li>新master上任, 其他slave切换master, 原master作为slave, 故障恢复后连接<br><img src="https://ftp.bmp.ovh/imgs/2020/04/06440c76bb36d29b.png" alt="发现问题"><br><img src="https://ftp.bmp.ovh/imgs/2020/04/c4217a0c6980f0f5.png" alt="竞选负责人"><br><img src="https://i.niupic.com/images/2020/04/09/7myq.png" alt="选择新master"></li>
+<li>新master上任, 其他slave切换master, 原master作为slave, 故障恢复后连接<br><img src="https://ftp.bmp.ovh/imgs/2020/04/06440c76bb36d29b.png" alt="8"><br><img src="https://ftp.bmp.ovh/imgs/2020/04/c4217a0c6980f0f5.png" alt="9"><br><img src="https://i.niupic.com/images/2020/04/09/7myq.png" alt="10"></li>
 </ol>
-<h3 id="7-3-集群"><a href="#7-3-集群" class="headerlink" title="7.3 集群"></a>7.3 集群</h3><p>集群就是使用网络将若干台计算机串联起来, 并提供统一的管理方式, 使其对外呈现单机的服务效果. 可以有效的分散单台服务器的访问压力, 实现负债均衡. 分散单台服务器的存储压力, 实现可扩展性. 同时也降低单台服务器宕机带来的业务灾难.<br><img src="https://i.niupic.com/images/2020/04/09/7mzi.png" alt="数据存储设计"><br><img src="https://i.niupic.com/images/2020/04/09/7mzh.png" alt="数据存储设计"><br><img src="https://i.niupic.com/images/2020/04/09/7mzl.png" alt="数据存储设计"></p>
+<h3 id="7-3-集群"><a href="#7-3-集群" class="headerlink" title="7.3 集群"></a>7.3 集群</h3><p>集群就是使用网络将若干台计算机串联起来, 并提供统一的管理方式, 使其对外呈现单机的服务效果. 可以有效的分散单台服务器的访问压力, 实现负债均衡. 分散单台服务器的存储压力, 实现可扩展性. 同时也降低单台服务器宕机带来的业务灾难.<br><img src="https://i.niupic.com/images/2020/04/09/7mzi.png" alt="11"><br><img src="https://i.niupic.com/images/2020/04/09/7mzh.png" alt="12"><br><img src="https://i.niupic.com/images/2020/04/09/7mzl.png" alt="13"></p>
 <h2 id="8-适用场景"><a href="#8-适用场景" class="headerlink" title="8. 适用场景"></a>8. 适用场景</h2><h3 id="8-1-缓存"><a href="#8-1-缓存" class="headerlink" title="8.1. 缓存"></a>8.1. 缓存</h3><p>缓存现在几乎是所有中大型网站都在用的必杀技, 合理的利用缓存不仅能够提升网站访问速度, 还能大大降低数据库的压力。Redis提供了键过期功能, 也提供了灵活的键淘汰策略, 所以, 现在Redis用在缓存的场合非常多。</p>
 <h3 id="8-2-消息队列"><a href="#8-2-消息队列" class="headerlink" title="8.2. 消息队列"></a>8.2. 消息队列</h3><p>消息队列是大型网站必用中间件, 主要用于业务解耦、流量削峰及异步处理实时性低的业务。Redis提供了发布/订阅及阻塞队列功能, 能实现一个简单的消息队列系统。</p>
 <h3 id="8-3-分布式锁"><a href="#8-3-分布式锁" class="headerlink" title="8.3 分布式锁"></a>8.3 分布式锁</h3><p>在很多互联网公司中都使用了分布式技术, 分布式技术带来的技术挑战是对同一个资源的并发访问, 如全局ID、减库存、秒杀等场景, 并发量不大的场景可以使用数据库的悲观锁、乐观锁来实现, 但在并发量高的场合中, 利用数据库锁来控制资源的并发访问是不太理想的, 大大影响了数据库的性能。可以利用Redis的setnx功能来编写分布式的锁, 如果设置返回1说明获取锁成功, 否则获取锁失败, 实际应用中要考虑的细节要更多。</p>
@@ -611,9 +611,9 @@
 <h3 id="11-5-双写不一致"><a href="#11-5-双写不一致" class="headerlink" title="11.5 双写不一致"></a>11.5 双写不一致</h3><p>数据库数据和缓存中数据偶尔有不一致的情况. 导致这种情况的主要原因就是更新缓存策略导致的.</p>
 <p>对于读请求比较简单, 先读redis, 在读数据库. 当cache hit, 返回数据. 当cache miss, 访问database, 并将数据放入cache中.</p>
 <p>但是对于写操作就比较复杂. 此时可以分为两种情况.</p>
-<h5 id="先操作数据库-再操作缓存"><a href="#先操作数据库-再操作缓存" class="headerlink" title="先操作数据库, 再操作缓存"></a>先操作数据库, 再操作缓存</h5><p><img src="https://ftp.bmp.ovh/imgs/2020/04/4f893f3295cb67af.png" alt="先操作数据库, 再操作缓存"></p>
+<h5 id="先操作数据库-再操作缓存"><a href="#先操作数据库-再操作缓存" class="headerlink" title="先操作数据库, 再操作缓存"></a>先操作数据库, 再操作缓存</h5><p><img src="https://ftp.bmp.ovh/imgs/2020/04/4f893f3295cb67af.png" alt="14"></p>
 <p>上图是一个简单的流程, 如果该过程中原子性被破坏, 就会出现数据库操作成功, 缓存操作失败. 此时数据库里是新数据, 缓存中却是旧数据. 无法接受</p>
-<h5 id="先操作缓存-再操作数据库"><a href="#先操作缓存-再操作数据库" class="headerlink" title="先操作缓存, 再操作数据库"></a>先操作缓存, 再操作数据库</h5><p><img src="https://ftp.bmp.ovh/imgs/2020/04/0305dd9279fcd4c9.png" alt="先操作缓存, 再操作数据库"></p>
+<h5 id="先操作缓存-再操作数据库"><a href="#先操作缓存-再操作数据库" class="headerlink" title="先操作缓存, 再操作数据库"></a>先操作缓存, 再操作数据库</h5><p><img src="https://ftp.bmp.ovh/imgs/2020/04/0305dd9279fcd4c9.png" alt="15"></p>
 <p>上图是一个简单的流程, 如果该过程中原子性被破坏, 就会出现缓存操作成功, 数据库操作失败. 这种情况下, 还需要考虑缓存中是使用set命令还是del命令.</p>
 <p>如果使用set命令, 就会导致缓存中是新数据, 数据库中是旧数据, 无法接受. 如果使用del命令, 就会导致缓存中没有数据, 数据库中还是旧数据, 在下一次读取时, 会多一次cache miss, 对业务没有影响, 这种情况下是可以接受的.</p>
 <p>但是问题到此还是没有结束.<br>在高并发的情况下, 如果redis中缓存删除成功, 数据库还没有操作完成, 此时另外一个请求进行查询, 看到redis中没有内容, 就到数据库中查找到旧的内容, 并且更新到redis中. 这种情况下, 缓存依旧是旧数据, 无法接受.</p>
